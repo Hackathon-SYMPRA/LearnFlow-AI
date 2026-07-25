@@ -17,3 +17,5 @@ langchain==0.2.0
 langchain-google-genai==1.0.5
 python-docx==1.1.2
 pdfplumber==0.11.0
+slowapi==0.1.9
+psutil==5.9.8

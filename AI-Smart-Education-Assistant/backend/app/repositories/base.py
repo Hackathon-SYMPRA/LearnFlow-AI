@@ -22,9 +22,24 @@ class BaseRepository(Generic[ModelType]):
             return self.model(**doc)
         return None
 
-    async def get_by_user(self, user_id: str) -> List[ModelType]:
+    async def get_by_user(
+        self, 
+        user_id: str, 
+        skip: int = 0, 
+        limit: int = 100, 
+        filters: Optional[Dict[str, Any]] = None,
+        sort: Optional[List[tuple]] = None
+    ) -> List[ModelType]:
         collection = self._get_collection()
-        docs = await collection.find({"user_id": user_id}).to_list(length=100)
+        query = {"user_id": user_id}
+        if filters:
+            query.update(filters)
+            
+        cursor = collection.find(query).skip(skip).limit(limit)
+        if sort:
+            cursor = cursor.sort(sort)
+            
+        docs = await cursor.to_list(length=limit)
         return [self.model(**doc) for doc in docs]
 
     async def create(self, obj_in: BaseModel, user_id: str) -> ModelType:
