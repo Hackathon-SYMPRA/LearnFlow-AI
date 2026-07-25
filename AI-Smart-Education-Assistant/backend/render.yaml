@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: edumind-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: MONGODB_URI
+        value: "mongodb+srv://<username>:<password>@cluster.mongodb.net/edumind_db?retryWrites=true&w=majority"
+      - key: JWT_SECRET
+        value: "super_secret_key_change_me_in_production"
+      - key: ALLOWED_ORIGINS
+        value: '["*"]'
