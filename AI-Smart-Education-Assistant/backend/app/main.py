@@ -53,13 +53,25 @@ app.add_middleware(RequestLoggingMiddleware)
 
 # Set up CORS middleware
 if settings.ALLOWED_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.ALLOWED_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    origins = [str(origin) for origin in settings.ALLOWED_ORIGINS]
+    # If wildcard is used, we cannot use allow_credentials=True with allow_origins=["*"]
+    # So we use allow_origin_regex=".*" to safely echo the origin back, bypassing the browser restriction.
+    if "*" in origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origin_regex=".*",
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    else:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
 from app.api.main import api_router
 app.include_router(api_router, prefix=settings.API_V1_STR)
