@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Network,
 } from "lucide-react";
 import { ROUTES } from "@/constants";
 import { useApp } from "@/contexts/AppContext";
@@ -28,6 +29,7 @@ const navItems = [
   { route: "upload", label: "Upload Center", icon: UploadCloud },
   { route: "chat", label: "AI Chat", icon: MessageSquare },
   { route: "notes", label: "Notes Generator", icon: Sparkles },
+  { route: "mindmap", label: "Mind Map", icon: Network },
   { route: "quiz", label: "Quiz Generator", icon: BrainCircuit },
   { route: "flashcards", label: "Flashcards", icon: Layers },
   { route: "planner", label: "Study Planner", icon: CalendarCheck },

@@ -10,6 +10,7 @@ export const ROUTES = {
   upload: "/upload",
   chat: "/chat",
   notes: "/notes",
+  mindmap: "/mindmap",
   quiz: "/quiz",
   flashcards: "/flashcards",
   planner: "/planner",
@@ -165,6 +166,11 @@ export const NAVIGATION_ITEMS = [
     route: "notes",
     label: "Notes Generator",
     description: "Generate smart study notes",
+  },
+  {
+    route: "mindmap",
+    label: "Mind Map",
+    description: "Visualize concepts",
   },
   {
     route: "quiz",
