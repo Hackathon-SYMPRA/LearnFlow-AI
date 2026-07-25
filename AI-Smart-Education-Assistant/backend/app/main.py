@@ -16,9 +16,13 @@ from app.core.ai import ai_provider
 from app.core.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
 from app.core.exceptions import http_exception_handler, validation_exception_handler, global_exception_handler
 
+import os
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
+    os.makedirs(settings.UPLOAD_DIRECTORY, exist_ok=True)
+    os.makedirs(settings.CHROMADB_PATH, exist_ok=True)
     await connect_to_mongo()
     # chroma_db.connect()
     ai_provider.initialize()
