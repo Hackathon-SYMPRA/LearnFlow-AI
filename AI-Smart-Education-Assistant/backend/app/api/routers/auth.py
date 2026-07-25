@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
 import jwt
 from jwt.exceptions import InvalidTokenError
+from pydantic import BaseModel
 
 from app.core.config import settings
 from app.models.token import Token, TokenPayload
@@ -31,9 +32,13 @@ async def register(user_in: UserCreate):
         }
     })
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 @router.post("/login", response_model=SuccessResponse)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await auth_service.authenticate_user(email=form_data.username, password=form_data.password)
+async def login(request: LoginRequest):
+    user = await auth_service.authenticate_user(email=request.email, password=request.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -58,8 +63,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def logout(current_user: UserInDB = Depends(get_current_user)):
     # In a real app we might blacklist the token or clear refresh token from db
     return SuccessResponse(message="Logged out successfully")
-
-from pydantic import BaseModel
 
 class RefreshRequest(BaseModel):
     refresh_token: str
