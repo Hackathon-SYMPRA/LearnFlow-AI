@@ -132,13 +132,13 @@ export const NotesPage = () => {
                 <button
                   key={type.id}
                   onClick={() => setSelectedType(type.id)}
-                  className={\`flex flex-col items-start rounded-xl border p-3 transition-all \${
+                  className={`flex flex-col items-start rounded-xl border p-3 transition-all ${
                     selectedType === type.id 
                       ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-500" 
                       : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
-                  }\`}
+                  }`}
                 >
-                  <span className={\`text-sm font-semibold \${selectedType === type.id ? "text-primary-700 dark:text-primary-400" : "text-slate-900 dark:text-slate-100"}\`}>
+                  <span className={`text-sm font-semibold ${selectedType === type.id ? "text-primary-700 dark:text-primary-400" : "text-slate-900 dark:text-slate-100"}`}>
                     {type.label}
                   </span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 text-left">

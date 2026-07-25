@@ -70,20 +70,20 @@ export const AITeacherPage = () => {
               key={msg.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={\`flex \${msg.role === 'user' ? 'justify-end' : 'justify-start'}\`}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={\`flex max-w-[85%] sm:max-w-[75%] gap-3 \${msg.role === 'user' ? 'flex-row-reverse' : ''}\`}>
-                <div className={\`flex h-8 w-8 shrink-0 items-center justify-center rounded-full \${msg.role === 'user' ? 'bg-primary-600 text-white' : 'bg-gradient-to-br from-primary-500 to-secondary-500 text-white'}\`}>
+              <div className={`flex max-w-[85%] sm:max-w-[75%] gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${msg.role === 'user' ? 'bg-primary-600 text-white' : 'bg-gradient-to-br from-primary-500 to-secondary-500 text-white'}`}>
                   {msg.role === 'user' ? 'U' : <GraduationCap className="h-4 w-4" />}
                 </div>
                 
-                <div className={\`flex flex-col \${msg.role === 'user' ? 'items-end' : 'items-start'}\`}>
-                  <div className={\`rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed shadow-sm \${msg.role === 'user' ? 'bg-primary-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 rounded-tl-none'}\`}>
+                <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-primary-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 rounded-tl-none'}`}>
                     {msg.content}
                   </div>
                   
                   {msg.correct !== undefined && (
-                    <div className={\`mt-2 flex items-center gap-1.5 text-sm font-medium \${msg.correct ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}\`}>
+                    <div className={`mt-2 flex items-center gap-1.5 text-sm font-medium ${msg.correct ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                       {msg.correct ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                       {msg.correct ? "Correct Answer" : "Incorrect Answer"}
                     </div>
