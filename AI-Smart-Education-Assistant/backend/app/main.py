@@ -1,0 +1,60 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from contextlib import asynccontextmanager
+
+from app.core.config import settings
+from app.db.mongodb import connect_to_mongo, close_mongo_connection
+# from app.db.chromadb import chroma_db
+from app.core.ai import ai_provider
+from app.core.middleware import RequestLoggingMiddleware, SecurityHeadersMiddleware
+from app.core.exceptions import http_exception_handler, validation_exception_handler, global_exception_handler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    await connect_to_mongo()
+    # chroma_db.connect()
+    ai_provider.initialize()
+    yield
+    # Shutdown logic
+    await close_mongo_connection()
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan
+)
+
+# Exception Handlers
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, global_exception_handler)
+
+# Middlewares
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+
+# Set up CORS middleware
+if settings.ALLOWED_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[str(origin) for origin in settings.ALLOWED_ORIGINS],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+from app.api.main import api_router
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to EduMind AI Backend API"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
