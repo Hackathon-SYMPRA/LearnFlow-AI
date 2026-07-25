@@ -1,0 +1,268 @@
+import { api } from "./apiClient";
+
+export const authService = {
+  async login(email, password) {
+    return api.post("/auth/login", { email, password });
+  },
+
+  async register(name, email, password) {
+    return api.post("/auth/register", { name, email, password });
+  },
+
+  async logout() {
+    return api.post("/auth/logout");
+  },
+
+  async getCurrentUser() {
+    return api.get("/auth/me");
+  },
+
+  async forgotPassword(email) {
+    return api.post("/auth/forgot-password", { email });
+  },
+
+  async resetPassword(token, password, confirmPassword) {
+    return api.post("/auth/reset-password", {
+      token,
+      password,
+      confirmPassword,
+    });
+  },
+};
+
+export const documentService = {
+  async list() {
+    return api.get("/documents");
+  },
+
+  async upload(file, subject, onProgress) {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (subject) formData.append("subject", subject);
+    return api.upload("/documents", formData, onProgress);
+  },
+
+  async remove(id) {
+    return api.delete(`/documents/${id}`);
+  },
+
+  async getById(id) {
+    return api.get(`/documents/${id}`);
+  },
+
+  async update(id, partial) {
+    return api.patch(`/documents/${id}`, partial);
+  },
+
+  async rename(id, name) {
+    return api.patch(`/documents/${id}`, { name });
+  },
+
+  async replace(id, file, onProgress) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.upload(`/documents/${id}/replace`, formData, onProgress);
+  },
+
+  async download(id) {
+    return api.download(`/documents/${id}/download`);
+  },
+
+  async favoriteToggle(id) {
+    return api.post(`/documents/${id}/favorite`);
+  },
+
+  async duplicateDetect(name, size) {
+    return api.post("/documents/detect-duplicate", { name, size });
+  },
+};
+
+export const chatService = {
+  async listSessions() {
+    return api.get("/chat/sessions");
+  },
+
+  async createSession(title, documentIds) {
+    return api.post("/chat/sessions", { title, documentIds });
+  },
+
+  async getSession(id) {
+    return api.get(`/chat/sessions/${id}`);
+  },
+
+  async sendMessage(sessionId, message) {
+    return api.post(`/chat/sessions/${sessionId}/messages`, { message });
+  },
+
+  async deleteSession(id) {
+    return api.delete(`/chat/sessions/${id}`);
+  },
+
+  streamMessage(sessionId, message, onChunk, onDone, onError) {
+    api.stream(
+      `/chat/sessions/${sessionId}/messages/stream`,
+      { message },
+      onChunk,
+      onDone,
+      onError,
+    );
+  },
+
+  async renameSession(id, title) {
+    return api.patch(`/chat/sessions/${id}`, { title });
+  },
+
+  async pinSession(id, pinned) {
+    return api.patch(`/chat/sessions/${id}`, { pinned: pinned ?? true });
+  },
+
+  async exportSession(id) {
+    return api.download(`/chat/sessions/${id}/export`);
+  },
+
+  async continueSession(id) {
+    return api.post(`/chat/sessions/${id}/continue`);
+  },
+};
+
+export const quizService = {
+  async list() {
+    return api.get("/quizzes");
+  },
+
+  async generate(documentIds, options) {
+    return api.post("/quizzes/generate", { documentIds, ...options });
+  },
+
+  async getById(id) {
+    return api.get(`/quizzes/${id}`);
+  },
+
+  async submitAttempt(quizId, answers) {
+    return api.post(`/quizzes/${quizId}/attempts`, { answers });
+  },
+
+  async listAttempts(quizId) {
+    return api.get(`/quizzes/${quizId}/attempts`);
+  },
+};
+
+export const flashcardService = {
+  async list() {
+    return api.get("/flashcards");
+  },
+
+  async generate(documentIds, options) {
+    return api.post("/flashcards/generate", { documentIds, ...options });
+  },
+
+  async create(card) {
+    return api.post("/flashcards", card);
+  },
+
+  async update(id, card) {
+    return api.put(`/flashcards/${id}`, card);
+  },
+
+  async remove(id) {
+    return api.delete(`/flashcards/${id}`);
+  },
+
+  async review(id, quality) {
+    return api.post(`/flashcards/${id}/review`, { quality });
+  },
+};
+
+export const plannerService = {
+  async list() {
+    return api.get("/planner");
+  },
+
+  async generate(options) {
+    return api.post("/planner/generate", options);
+  },
+
+  async create(plan) {
+    return api.post("/planner", plan);
+  },
+
+  async update(id, plan) {
+    return api.put(`/planner/${id}`, plan);
+  },
+
+  async remove(id) {
+    return api.delete(`/planner/${id}`);
+  },
+};
+
+export const analyticsService = {
+  async getOverview() {
+    return api.get("/analytics/overview");
+  },
+};
+
+export const notificationService = {
+  async list() {
+    return api.get("/notifications");
+  },
+
+  async markRead(id) {
+    return api.patch(`/notifications/${id}/read`);
+  },
+
+  async markAllRead() {
+    return api.post("/notifications/read-all");
+  },
+
+  async remove(id) {
+    return api.delete(`/notifications/${id}`);
+  },
+
+  async clearAll() {
+    return api.delete("/notifications");
+  },
+
+  async getCountUnread() {
+    return api.get("/notifications/unread-count");
+  },
+};
+
+export const subjectService = {
+  async list() {
+    return api.get("/subjects");
+  },
+
+  async create(data) {
+    return api.post("/subjects", data);
+  },
+
+  async update(id, data) {
+    return api.patch(`/subjects/${id}`, data);
+  },
+
+  async remove(id) {
+    return api.delete(`/subjects/${id}`);
+  },
+
+  async recent() {
+    return api.get("/subjects/recent");
+  },
+};
+
+export const searchService = {
+  async global(query, options) {
+    return api.get("/search", { params: { query, ...options } });
+  },
+};
+
+export const notificationCategoryService = {};
+
+export const userService = {
+  async updateProfile(data) {
+    return api.patch("/users/profile", data);
+  },
+
+  async changePassword(currentPassword, newPassword) {
+    return api.post("/users/password", { currentPassword, newPassword });
+  },
+};
