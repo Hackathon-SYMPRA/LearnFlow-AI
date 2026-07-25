@@ -61,6 +61,7 @@ async def delete_study_planner(id: str, current_user: UserInDB = Depends(get_cur
         raise HTTPException(status_code=404, detail="Study Planner not found or delete failed")
     return SuccessResponse(message="Study Planner deleted successfully")
 
+from pydantic import BaseModel as PydanticBaseModel
 class PlannerGenerateRequest(PydanticBaseModel):
     topics: str
     days: int

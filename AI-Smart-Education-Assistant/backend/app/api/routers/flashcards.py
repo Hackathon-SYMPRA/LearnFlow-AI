@@ -61,6 +61,7 @@ async def delete_flashcard(id: str, current_user: UserInDB = Depends(get_current
         raise HTTPException(status_code=404, detail="Flashcard not found or delete failed")
     return SuccessResponse(message="Flashcard deleted successfully")
 
+from pydantic import BaseModel as PydanticBaseModel
 class FlashcardGenerateRequest(PydanticBaseModel):
     num_flashcards: int = 5
     document_ids: Optional[List[str]] = None
