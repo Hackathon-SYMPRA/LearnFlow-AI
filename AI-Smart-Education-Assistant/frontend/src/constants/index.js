@@ -11,6 +11,7 @@ export const ROUTES = {
   chat: "/chat",
   notes: "/notes",
   mindmap: "/mindmap",
+  "ai-teacher": "/ai-teacher",
   quiz: "/quiz",
   flashcards: "/flashcards",
   planner: "/planner",
@@ -171,6 +172,11 @@ export const NAVIGATION_ITEMS = [
     route: "mindmap",
     label: "Mind Map",
     description: "Visualize concepts",
+  },
+  {
+    route: "ai-teacher",
+    label: "AI Teacher & Exam",
+    description: "Interactive tutoring",
   },
   {
     route: "quiz",

@@ -22,6 +22,9 @@ const NotesPage = lazy(() =>
 const MindMapPage = lazy(() =>
   import("@/pages/MindMapPage").then((m) => ({ default: m.MindMapPage })),
 );
+const AITeacherPage = lazy(() =>
+  import("@/pages/AITeacherPage").then((m) => ({ default: m.AITeacherPage })),
+);
 const QuizPage = lazy(() =>
   import("@/pages/QuizPage").then((m) => ({ default: m.QuizPage })),
 );
@@ -138,6 +141,7 @@ export const AppRouter = () => {
             <Route path="/chat/:sessionId" element={withSuspense(ChatPage)} />
             <Route path="/notes" element={withSuspense(NotesPage)} />
             <Route path="/mindmap" element={withSuspense(MindMapPage)} />
+            <Route path="/ai-teacher" element={withSuspense(AITeacherPage)} />
             <Route path="/quiz" element={withSuspense(QuizPage)} />
             <Route path="/flashcards" element={withSuspense(FlashcardsPage)} />
             <Route path="/planner" element={withSuspense(PlannerPage)} />
