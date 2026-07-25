@@ -56,6 +56,17 @@ async def get_documents():
 async def get_chat_sessions():
     return []
 
+@app.post("/api/v1/chat/sessions")
+async def create_chat_session(req: dict):
+    return {"id": "mock-session-1", "title": req.get("title", "New Chat"), "messages": [], "createdAt": datetime.now().isoformat(), "updatedAt": datetime.now().isoformat()}
+
+@app.post("/api/v1/chat/sessions/{session_id}/messages/stream")
+async def stream_message(session_id: str, req: dict):
+    from fastapi.responses import StreamingResponse
+    async def generate():
+        yield "This is a mock response from the AI."
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
 @app.get("/api/v1/notifications/unread-count")
 async def get_unread_count():
     return {"count": 2}
