@@ -40,7 +40,9 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback(async (email, password) => {
     setState((prev) => ({ ...prev, isLoading: true }));
     try {
-      const { user, token } = await authService.login(email, password);
+      const response = await authService.login(email, password);
+      const user = response.data.user;
+      const token = response.data.tokens.access_token;
       storage.set(STORAGE_KEYS.TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);
       setState({ user, token, isAuthenticated: true, isLoading: false });
@@ -53,7 +55,9 @@ export const AuthProvider = ({ children }) => {
   const register = useCallback(async (name, email, password) => {
     setState((prev) => ({ ...prev, isLoading: true }));
     try {
-      const { user, token } = await authService.register(name, email, password);
+      const response = await authService.register(name, email, password);
+      const user = response.data.user;
+      const token = response.data.tokens.access_token;
       storage.set(STORAGE_KEYS.TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);
       setState({ user, token, isAuthenticated: true, isLoading: false });

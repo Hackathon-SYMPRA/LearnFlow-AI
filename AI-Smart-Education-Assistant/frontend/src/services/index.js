@@ -14,7 +14,7 @@ export const authService = {
   },
 
   async getCurrentUser() {
-    return api.get("/auth/me");
+    return api.get("/users/me");
   },
 
   async forgotPassword(email) {
