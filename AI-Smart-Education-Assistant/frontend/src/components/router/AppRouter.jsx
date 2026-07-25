@@ -16,6 +16,9 @@ const UploadPage = lazy(() =>
 const ChatPage = lazy(() =>
   import("@/pages/ChatPage").then((m) => ({ default: m.ChatPage })),
 );
+const NotesPage = lazy(() =>
+  import("@/pages/NotesPage").then((m) => ({ default: m.NotesPage })),
+);
 const QuizPage = lazy(() =>
   import("@/pages/QuizPage").then((m) => ({ default: m.QuizPage })),
 );
@@ -130,6 +133,7 @@ export const AppRouter = () => {
             <Route path="/upload" element={withSuspense(UploadPage)} />
             <Route path="/chat" element={withSuspense(ChatPage)} />
             <Route path="/chat/:sessionId" element={withSuspense(ChatPage)} />
+            <Route path="/notes" element={withSuspense(NotesPage)} />
             <Route path="/quiz" element={withSuspense(QuizPage)} />
             <Route path="/flashcards" element={withSuspense(FlashcardsPage)} />
             <Route path="/planner" element={withSuspense(PlannerPage)} />

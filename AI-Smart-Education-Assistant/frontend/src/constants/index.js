@@ -9,6 +9,7 @@ export const ROUTES = {
   dashboard: "/dashboard",
   upload: "/upload",
   chat: "/chat",
+  notes: "/notes",
   quiz: "/quiz",
   flashcards: "/flashcards",
   planner: "/planner",
@@ -159,6 +160,11 @@ export const NAVIGATION_ITEMS = [
     route: "chat",
     label: "AI Chat",
     description: "Ask AI about your documents",
+  },
+  {
+    route: "notes",
+    label: "Notes Generator",
+    description: "Generate smart study notes",
   },
   {
     route: "quiz",

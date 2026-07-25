@@ -27,6 +27,7 @@ const navItems = [
   { route: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { route: "upload", label: "Upload Center", icon: UploadCloud },
   { route: "chat", label: "AI Chat", icon: MessageSquare },
+  { route: "notes", label: "Notes Generator", icon: Sparkles },
   { route: "quiz", label: "Quiz Generator", icon: BrainCircuit },
   { route: "flashcards", label: "Flashcards", icon: Layers },
   { route: "planner", label: "Study Planner", icon: CalendarCheck },
