@@ -44,7 +44,16 @@ export const NotesPage = () => {
 
   React.useEffect(() => {
     documentService.list().then(res => {
-      setDocuments(res.data || []);
+      if (res && res.data) {
+        const normalized = res.data.map(d => ({
+          ...d,
+          name: d.original_name || d.file_name || d.name,
+          id: d.id || d._id
+        }));
+        setDocuments(normalized);
+      } else {
+        setDocuments([]);
+      }
     }).catch(console.error);
   }, []);
 
@@ -61,7 +70,7 @@ export const NotesPage = () => {
     const docName = doc ? (doc.original_name || doc.file_name || doc.filename || doc.name) : "document";
 
     try {
-      const response = await aiService.generateNotes(docName, NOTE_TYPES.find(t => t.id === selectedType)?.label || "Summary Notes");
+      const response = await aiService.generateNotes(selectedDoc, NOTE_TYPES.find(t => t.id === selectedType)?.label || "Summary Notes");
       setGeneratedNote(response.data?.notes || "No notes generated.");
       toast.success("Notes generated successfully!");
     } catch (err) {

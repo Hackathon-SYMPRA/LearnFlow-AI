@@ -32,7 +32,16 @@ export const MindMapPage = () => {
     const fetchDocs = async () => {
       try {
         const response = await documentService.list();
-        setDocuments(response.data || []);
+        if (response && response.data) {
+          const normalized = response.data.map(d => ({
+            ...d,
+            name: d.original_name || d.file_name || d.name,
+            id: d.id || d._id
+          }));
+          setDocuments(normalized);
+        } else {
+          setDocuments([]);
+        }
       } catch (err) {
         toast.error("Failed to load documents");
       }

@@ -28,7 +28,7 @@ class ChatQueryRequest(BaseModel):
     chat_history: Optional[List[ChatMessage]] = None
 
 class GenerateNotesRequest(BaseModel):
-    topic_query: str
+    document_id: str
     note_type: str = "Summary Notes"
 
 class TeacherChatRequest(BaseModel):
@@ -158,7 +158,12 @@ async def generate_notes(
     request: GenerateNotesRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
-    context_chunks = rag_service.similarity_search(request.topic_query, current_user.id, top_k=10)
+    context_chunks = rag_service.similarity_search(
+        "main concepts and topics", 
+        current_user.id, 
+        top_k=15,
+        document_id=request.document_id
+    )
     
     if not context_chunks:
         raise HTTPException(status_code=400, detail="No relevant study material found for this topic.")
@@ -177,11 +182,12 @@ async def generate_mindmap(
     # Here we can search for the specific document or a broad query.
     # Since we want to use the uploaded file, we should fetch context using the document_id
     # We can pass the document's name or a broad query to get its chunks, or fetch all chunks for this doc.
-    # We'll use a broad search for now, assuming the document's content is indexed.
-    context_chunks = rag_service.similarity_search("main concepts and topics", current_user.id, top_k=15)
-    
-    # Filter by document_id if needed, but for MVP let's just pass the chunks.
-    # Actually, RAG service similarity search doesn't filter by doc_id directly in the current implementation without modification.
+    context_chunks = rag_service.similarity_search(
+        "main concepts and topics", 
+        current_user.id, 
+        top_k=15, 
+        document_id=request.document_id
+    )
     # Let's just use it as is, or we can fetch chunks directly from MongoDB if we had a method.
     
     if not context_chunks:

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     
     # AI Services
     GEMINI_API_KEY: str
+    GROQ_API_KEY: str
     CHROMADB_PATH: str = "./chroma_data"
     
     # File Uploads

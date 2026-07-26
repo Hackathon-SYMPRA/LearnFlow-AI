@@ -276,7 +276,7 @@ export const aiService = {
   async generateMindMap(document_id) {
     return api.post("/generate/mindmap", { document_id });
   },
-  async generateNotes(topic_query, note_type) {
-    return api.post("/generate/notes", { topic_query, note_type });
+  async generateNotes(document_id, note_type) {
+    return api.post("/generate/notes", { document_id, note_type });
   },
 };
