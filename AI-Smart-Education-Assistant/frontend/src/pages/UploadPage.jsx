@@ -304,7 +304,16 @@ export const UploadPage = () => {
   
   useEffect(() => {
     documentService.list().then(res => {
-      if (res && res.data) setDocuments(res.data);
+      if (res && res.data) {
+        const normalized = res.data.map(d => ({
+          ...d,
+          name: d.file_name || d.name,
+          type: d.file_type || d.type,
+          size: d.file_size || d.size,
+          uploadDate: d.created_at || d.uploadDate,
+        }));
+        setDocuments(normalized);
+      }
     }).catch(console.error);
   }, []);
   const [jobs, setJobs] = useState([]);
@@ -458,7 +467,14 @@ export const UploadPage = () => {
           );
         })
         .then((res) => {
-          const newDoc = res.data;
+          const d = res.data;
+          const newDoc = {
+            ...d,
+            name: d.file_name || d.name,
+            type: d.file_type || d.type,
+            size: d.file_size || d.size,
+            uploadDate: d.created_at || d.uploadDate,
+          };
           setDocuments((docs) => [newDoc, ...docs]);
           toast.success(`${job.fileName} uploaded successfully`);
           setJobs((pj) =>
