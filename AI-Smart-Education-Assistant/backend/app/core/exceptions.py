@@ -38,10 +38,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
     error_response = ErrorResponse(
         status="error",
         error="InternalServerError",
-        message="An unexpected error occurred.",
+        message=f"{str(exc)} | {traceback.format_exc()}",
         request_id=getattr(request.state, "request_id", None)
     )
     # In production, log the full exception here.
