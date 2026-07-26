@@ -17,11 +17,19 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     )
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = exc.errors()
+    sanitized_errors = []
+    for error in errors:
+        error_dict = dict(error)
+        if "ctx" in error_dict and isinstance(error_dict["ctx"], dict):
+            error_dict["ctx"] = {k: str(v) for k, v in error_dict["ctx"].items()}
+        sanitized_errors.append(error_dict)
+        
     error_response = ErrorResponse(
         status="error",
         error="ValidationError",
         message="Invalid request parameters",
-        validation_details={"errors": exc.errors()},
+        validation_details={"errors": sanitized_errors},
         request_id=getattr(request.state, "request_id", None)
     )
     return JSONResponse(

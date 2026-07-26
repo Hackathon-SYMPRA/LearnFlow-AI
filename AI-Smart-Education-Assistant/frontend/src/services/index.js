@@ -6,7 +6,12 @@ export const authService = {
   },
 
   async register(name, email, password) {
-    return api.post("/auth/register", { name, email, password });
+    return api.post("/auth/register", { 
+      full_name: name, 
+      email: email, 
+      password: password, 
+      confirm_password: password 
+    });
   },
 
   async logout() {
