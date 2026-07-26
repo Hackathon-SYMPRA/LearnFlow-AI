@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class RAGService:
     def __init__(self):
         self.embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004",
+            model="models/gemini-embedding-001",
             google_api_key=settings.GEMINI_API_KEY,
             transport="rest"
         )
