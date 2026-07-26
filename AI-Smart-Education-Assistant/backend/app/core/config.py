@@ -6,17 +6,17 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # Security
-    JWT_SECRET: str = "super_secret_key_change_me_in_production"
+    JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # MongoDB
-    MONGODB_URI: str = "mongodb://localhost:27017"
+    MONGODB_URI: str
     DATABASE_NAME: str = "edumind_db"
     
     # AI Services
-    GEMINI_API_KEY: str = ""
+    GEMINI_API_KEY: str
     CHROMADB_PATH: str = "./chroma_data"
     
     # File Uploads
