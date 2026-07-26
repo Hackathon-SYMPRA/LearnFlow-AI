@@ -180,23 +180,23 @@ export const flashcardService = {
 
 export const plannerService = {
   async list() {
-    return api.get("/planner");
+    return api.get("/study-plans");
   },
 
   async generate(options) {
-    return api.post("/planner/generate", options);
+    return api.post("/study-plans/generate", options);
   },
 
   async create(plan) {
-    return api.post("/planner", plan);
+    return api.post("/study-plans", plan);
   },
 
   async update(id, plan) {
-    return api.put(`/planner/${id}`, plan);
+    return api.put(`/study-plans/${id}`, plan);
   },
 
   async remove(id) {
-    return api.delete(`/planner/${id}`);
+    return api.delete(`/study-plans/${id}`);
   },
 };
 
@@ -274,15 +274,15 @@ export const userService = {
 
 export const aiService = {
   async generateMindMap(document_id) {
-    return api.post("/generate/mindmap", { document_id });
+    return api.post("/ai/generate/mindmap", { document_id });
   },
   async generateNotes(document_id, note_type) {
-    return api.post("/generate/notes", { document_id, note_type });
+    return api.post("/ai/generate/notes", { document_id, note_type });
   },
   async generateMockTestQuestion(document_id, language, chat_history) {
-    return api.post("/mock-test/question", { document_id, language, chat_history });
+    return api.post("/ai/mock-test/question", { document_id, language, chat_history });
   },
   async evaluateMockTestAnswer(document_id, language, user_answer, chat_history) {
-    return api.post("/mock-test/evaluate", { document_id, language, user_answer, chat_history });
+    return api.post("/ai/mock-test/evaluate", { document_id, language, user_answer, chat_history });
   },
 };
