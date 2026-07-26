@@ -155,8 +155,14 @@ class AIGenerator:
         
         prompt = f"""
         Create {num_flashcards} flashcards from the provided study material.
-        Output MUST be in a strict JSON array format with fields: "question", "answer".
-        Do not output any markdown formatting like ```json, just the raw array.
+        Output MUST be a strict JSON object containing a "flashcards" array.
+        Each item in the array MUST have the following fields: 
+        - "question" (string)
+        - "answer" (string)
+        - "difficulty" (string: "Easy", "Medium", or "Hard")
+        - "subject" (string: identify the main subject/topic of the flashcard)
+        
+        Do not output any markdown formatting like ```json, just the raw JSON object.
 
         Context:
         {context_str}
@@ -164,7 +170,8 @@ class AIGenerator:
         response = await self.client.chat.completions.create(
             model=self.text_model,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+            temperature=0.7,
+            response_format={"type": "json_object"}
         )
         return response.choices[0].message.content
         

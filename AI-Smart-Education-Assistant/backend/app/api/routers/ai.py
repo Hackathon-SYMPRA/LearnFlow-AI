@@ -42,7 +42,8 @@ class GenerateQuizRequest(BaseModel):
     num_questions: int = 5
 
 class GenerateFlashcardsRequest(BaseModel):
-    topic_query: str
+    topic_query: str = "main concepts"
+    document_id: Optional[str] = None
     num_flashcards: int = 5
 
 class GenerateStudyPlanRequest(BaseModel):
@@ -128,14 +129,17 @@ async def generate_flashcards(
     request: GenerateFlashcardsRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
-    context_chunks = rag_service.similarity_search(request.topic_query, current_user.id, top_k=10)
+    query = request.topic_query if request.topic_query else "main concepts and definitions"
+    context_chunks = rag_service.similarity_search(query, current_user.id, top_k=15)
+    
     if not context_chunks:
-        raise HTTPException(status_code=400, detail="No relevant study material found for this topic.")
+        raise HTTPException(status_code=400, detail="No relevant study material found to generate flashcards.")
         
     flashcards_json_str = await ai_generator.generate_flashcards(context_chunks, request.num_flashcards)
     
     try:
-        flashcards_data = json.loads(flashcards_json_str)
+        data = json.loads(flashcards_json_str)
+        flashcards_data = data.get("flashcards", data)
     except Exception:
         flashcards_data = flashcards_json_str
         

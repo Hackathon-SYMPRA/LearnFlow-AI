@@ -73,8 +73,19 @@ async def generate_flashcards_endpoint(
 ):
     from app.services.ai.rag_service import rag_service
     from app.services.ai.generator import ai_generator
+    import json
     
-    context_chunks = await rag_service.similarity_search("Generate flashcards", user_id=current_user.id, k=5)
+    context_chunks = rag_service.similarity_search("main concepts and definitions", current_user.id, top_k=15)
+    
+    if not context_chunks:
+        raise HTTPException(status_code=400, detail="No relevant study material found to generate flashcards.")
+
     raw_response = await ai_generator.generate_flashcards(context_chunks, req.num_flashcards)
     
-    return SuccessResponse(message="Flashcards generated", data=raw_response)
+    try:
+        data = json.loads(raw_response)
+        flashcards_data = data.get("flashcards", data)
+    except Exception:
+        flashcards_data = raw_response
+    
+    return SuccessResponse(message="Flashcards generated successfully", data={"flashcards": flashcards_data})
