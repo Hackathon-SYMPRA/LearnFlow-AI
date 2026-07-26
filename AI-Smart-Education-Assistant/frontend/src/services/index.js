@@ -279,4 +279,10 @@ export const aiService = {
   async generateNotes(document_id, note_type) {
     return api.post("/generate/notes", { document_id, note_type });
   },
+  async generateMockTestQuestion(document_id, language, chat_history) {
+    return api.post("/mock-test/question", { document_id, language, chat_history });
+  },
+  async evaluateMockTestAnswer(document_id, language, user_answer, chat_history) {
+    return api.post("/mock-test/evaluate", { document_id, language, user_answer, chat_history });
+  },
 };

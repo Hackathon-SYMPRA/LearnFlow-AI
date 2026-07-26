@@ -278,4 +278,64 @@ class AIGenerator:
         )
         return response.choices[0].message.content
 
+    async def generate_mock_test_question(self, context_chunks: List[Dict], language: str = "English", history: List[Dict] = None) -> str:
+        context_str = self._build_context_string(context_chunks)
+        
+        system_prompt = f"""
+        You are an expert Teacher conducting a vocal Mock Test with a student.
+        Based on the provided context from the student's study material, ask ONE conceptual question.
+        Make the question clear, engaging, and suitable for an oral exam.
+        Do not provide the answer. Just ask the question.
+        You MUST speak entirely in the {language} language.
+
+        Context:
+        {context_str}
+        """
+        
+        messages = [{"role": "system", "content": system_prompt}]
+        if history:
+            for msg in history:
+                messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
+        else:
+            messages.append({"role": "user", "content": "Start the mock test and ask me the first question."})
+
+        response = await self.client.chat.completions.create(
+            model=self.text_model,
+            messages=messages,
+            temperature=0.7
+        )
+        return response.choices[0].message.content
+
+    async def evaluate_mock_test_answer(self, user_answer: str, context_chunks: List[Dict], language: str = "English", history: List[Dict] = None) -> str:
+        context_str = self._build_context_string(context_chunks)
+        
+        system_prompt = f"""
+        You are an expert Teacher conducting a vocal Mock Test. 
+        The student has just answered your previous question.
+        Your task:
+        1. Evaluate the student's answer based on the Context.
+        2. Give encouraging feedback, correct any mistakes, and explain the concept briefly if they are wrong.
+        3. Tell them how well they understood the concept.
+        4. End your response by asking the NEXT relevant question from the context to continue the mock test.
+        
+        You MUST speak entirely in the {language} language.
+
+        Context:
+        {context_str}
+        """
+        
+        messages = [{"role": "system", "content": system_prompt}]
+        if history:
+            for msg in history:
+                messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
+                
+        messages.append({"role": "user", "content": user_answer})
+
+        response = await self.client.chat.completions.create(
+            model=self.text_model,
+            messages=messages,
+            temperature=0.7
+        )
+        return response.choices[0].message.content
+
 ai_generator = AIGenerator()

@@ -213,4 +213,39 @@ async def chat_teacher(
     
     response_text = await ai_generator.generate_teacher_response(request.query, context_chunks, request.mode, history_dicts)
     
-    return SuccessResponse(message="Teacher response generated", data={"response": response_text, "context_used": len(context_chunks)})
+class MockTestRequest(BaseModel):
+    document_id: str
+    language: str = "English"
+    chat_history: Optional[List[ChatMessage]] = None
+
+class MockTestEvaluateRequest(BaseModel):
+    document_id: str
+    language: str = "English"
+    user_answer: str
+    chat_history: Optional[List[ChatMessage]] = None
+
+@router.post("/mock-test/question", response_model=SuccessResponse)
+async def generate_mock_test_question(
+    request: MockTestRequest,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    context_chunks = rag_service.similarity_search("main concepts and topics", current_user.id, top_k=15, document_id=request.document_id)
+    if not context_chunks:
+        raise HTTPException(status_code=400, detail="No relevant study material found for this document.")
+        
+    history_dicts = [msg.model_dump() for msg in request.chat_history] if request.chat_history else None
+    
+    question = await ai_generator.generate_mock_test_question(context_chunks, request.language, history_dicts)
+    return SuccessResponse(message="Question generated successfully", data={"response": question})
+
+@router.post("/mock-test/evaluate", response_model=SuccessResponse)
+async def evaluate_mock_test_answer(
+    request: MockTestEvaluateRequest,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    context_chunks = rag_service.similarity_search(request.user_answer, current_user.id, top_k=10, document_id=request.document_id)
+    
+    history_dicts = [msg.model_dump() for msg in request.chat_history] if request.chat_history else None
+    
+    evaluation = await ai_generator.evaluate_mock_test_answer(request.user_answer, context_chunks, request.language, history_dicts)
+    return SuccessResponse(message="Answer evaluated successfully", data={"response": evaluation})
