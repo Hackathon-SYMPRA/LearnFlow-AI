@@ -206,10 +206,21 @@ export const AuthPage = () => {
           "We couldn\u2019t reach our servers. Please check your internet connection and try again.",
         );
       }
+
+      // Try to extract the validation error message from the nested details if it exists
+      let desc = isNetwork ? "Check your connection and try again." : "Please try again.";
+      if (error?.details?.errors?.[0]?.msg) {
+        desc = error.details.errors[0].msg;
+      } else if (error?.details?.errors?.[0]?.ctx?.error) {
+        desc = error.details.errors[0].ctx.error;
+      } else if (!isNetwork && message !== "Registration failed" && message !== "Invalid request parameters") {
+        desc = message;
+      } else if (message === "Invalid request parameters") {
+        desc = "Please ensure your password is at least 8 characters with numbers and symbols.";
+      }
+
       toast.error(message, {
-        description: isNetwork
-          ? "Check your connection and try again."
-          : "Please try a different email.",
+        description: desc,
       });
     }
   };
