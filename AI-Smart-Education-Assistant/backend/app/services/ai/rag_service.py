@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 from app.db.chromadb import chroma_db
 from app.core.config import settings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
