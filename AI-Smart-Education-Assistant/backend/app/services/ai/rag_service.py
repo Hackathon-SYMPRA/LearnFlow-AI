@@ -10,7 +10,8 @@ class RAGService:
     def __init__(self):
         self.embeddings = GoogleGenerativeAIEmbeddings(
             model="models/embedding-001",
-            google_api_key=settings.GEMINI_API_KEY
+            google_api_key=settings.GEMINI_API_KEY,
+            transport="rest"
         )
         self.collection_name = "edumind_vectors"
 
