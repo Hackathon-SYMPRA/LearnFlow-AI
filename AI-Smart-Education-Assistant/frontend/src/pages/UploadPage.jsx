@@ -307,10 +307,11 @@ export const UploadPage = () => {
       if (res && res.data) {
         const normalized = res.data.map(d => ({
           ...d,
-          name: d.file_name || d.name,
+          name: d.original_name || d.file_name || d.name,
           type: d.file_type || d.type,
           size: d.file_size || d.size,
-          uploadDate: d.created_at || d.uploadDate,
+          uploadDate: d.upload_date || d.created_at || d.uploadDate || new Date().toISOString(),
+          status: d.processing_status?.toLowerCase() === "pending" ? "processing" : (d.status || "ready"),
         }));
         setDocuments(normalized);
       }
@@ -470,10 +471,11 @@ export const UploadPage = () => {
           const d = res.data;
           const newDoc = {
             ...d,
-            name: d.file_name || d.name,
+            name: d.original_name || d.file_name || d.name,
             type: d.file_type || d.type,
             size: d.file_size || d.size,
-            uploadDate: d.created_at || d.uploadDate,
+            uploadDate: d.upload_date || d.created_at || d.uploadDate || new Date().toISOString(),
+            status: d.processing_status?.toLowerCase() === "pending" ? "processing" : (d.status || "ready"),
           };
           setDocuments((docs) => [newDoc, ...docs]);
           toast.success(`${job.fileName} uploaded successfully`);

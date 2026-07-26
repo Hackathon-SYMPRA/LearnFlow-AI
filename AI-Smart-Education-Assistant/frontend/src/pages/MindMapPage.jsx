@@ -119,7 +119,7 @@ export const MindMapPage = () => {
               >
                 <option value="" disabled>Choose a document...</option>
                 {documents.map(doc => (
-                  <option key={doc._id || doc.id} value={doc._id || doc.id}>{doc.filename || doc.name}</option>
+                  <option key={doc._id || doc.id} value={doc._id || doc.id}>{doc.original_name || doc.file_name || doc.filename || doc.name}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 pointer-events-none" />

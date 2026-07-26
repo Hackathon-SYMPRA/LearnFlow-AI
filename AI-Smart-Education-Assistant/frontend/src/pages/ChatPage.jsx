@@ -78,214 +78,7 @@ const groupDateKey = (d) => {
   return "Older";
 };
 
-const SAMPLE_ASSISTANT_1 = `## Understanding Limits in Calculus
-
-The formal definition of a limit describes the behaviour of a function \`f(x)\` as \`x\` approaches some value \`a\`:
-
-$$ \\lim_{x \\to a} f(x) = L $$
-
-### Key Theorems
-
-1. **Squeeze Theorem**: If \`g(x) \\le f(x) \\le h(x)\` near \`a\`, and \`\\lim g(x) = \\lim h(x) = L\`, then \`\\lim f(x) = L\`.
-2. **L'H\u00f4pital's Rule**: For indeterminate forms \`0/0\` or \`\\infty/\\infty\`, differentiate numerator and denominator.
-3. **Continuity Implies Limit Existence**: If \`f\` is continuous at \`a\`, the limit equals \`f(a)\`.
-
-> Remember: a limit does not require \`f(a)\` to be defined.
-
-### Example: Evaluating a Limit
-
-\`\`\`text
-Evaluate lim (x -> 2)  (x^2 - 4) / (x - 2)
-
-Step 1: Factor numerator
-  x^2 - 4 = (x - 2)(x + 2)
-
-Step 2: Cancel (x - 2) when x != 2
-  (x - 2)(x + 2) / (x - 2) = x + 2
-
-Step 3: Substitute x = 2
-  2 + 2 = 4
-
-Answer: 4
-\`\`\`
-
-### Common Mistakes
-
-| Mistake | Correct Approach |
-| --- | --- |
-| Substituting directly when undefined | Factor, simplify, then substitute |
-| Ignoring one-sided limits | Check \`lim_{x -> a^-}\` and \`lim_{x -> a^+}\` |
-| Applying L'H\u00f4pital blindly | Verify indeterminate form first |
-
-- Always check **one-sided limits** for piecewise functions.
-- Use algebraic manipulation before L'H\u00f4pital whenever possible.
-- Graphical intuition can guide your formal proof.
-`;
-
-const SAMPLE_CITATIONS_1 = [
-  {
-    documentName: "Calculus_Chapter3_Limits.pdf",
-    page: 45,
-    confidence: 0.92,
-    text: "Definition 3.1 (Limit of a function). Let f be a function defined on some open interval containing a, except possibly at a itself. We write lim x\u2192a f(x) = L if for every \u03b5 > 0 there exists a \u03b4 > 0 such that 0 < |x \u2212 a| < \u03b4 implies |f(x) \u2212 L| < \u03b5. This formalisation is commonly known as the epsilon\u2013delta definition and was popularised by Weierstrass in the 1870s as a rigorous replacement for earlier infinitesimal arguments.",
-  },
-  {
-    documentName: "Calculus_Chapter3_Limits.pdf",
-    page: 52,
-    confidence: 0.87,
-    text: "Theorem 3.10 (Squeeze Theorem). Suppose that g(x) \u2264 f(x) \u2264 h(x) for all x in some deleted neighbourhood of a, and that lim x\u2192a g(x) = L and lim x\u2192a h(x) = L. Then lim x\u2192a f(x) exists and equals L. The Squeeze Theorem is an indispensable tool for limits involving trigonometric functions, especially the classic limit of sin(x)/x as x tends to zero.",
-  },
-  {
-    documentName: "Lecture_Notes_Calculus_W5.docx",
-    page: 8,
-    confidence: 0.74,
-    text: "L'H\u00f4pital's Rule applies to indeterminate forms 0/0 and \u221e/\u221e. Before applying the rule, always confirm that the form is indeed indeterminate. A common student error is differentiating the expression as a fraction via the quotient rule; the rule instead calls for differentiating numerator and denominator separately.",
-  },
-];
-
-const RELATED_QUESTIONS_1 = [
-  "How do I verify a limit using the epsilon-delta definition?",
-  "When should I avoid using L\u2019H\u00f4pital\u2019s Rule?",
-  "Can you give me more examples of the Squeeze Theorem?",
-];
-
-const SAMPLE_ASSISTANT_2 = `## Photosynthesis Summary
-
-Photosynthesis converts **light energy** into chemical energy stored in glucose. The overall reaction is:
-
-$$ 6\\,CO_2 + 6\\,H_2O \\xrightarrow{\\text{light}} C_6H_{12}O_6 + 6\\,O_2 $$
-
-### Two Main Stages
-
-1. **Light-Dependent Reactions** occur in the thylakoid membranes.
-2. **Calvin Cycle (Light-Independent)** occurs in the stroma.
-
-> \u201cThe sun is the ultimate source of energy for nearly all life on Earth.\u201d
-
-### Reactants and Products
-
-| Input | Where from | Output | Where to |
-| --- | --- | --- | --- |
-| CO2 | Atmosphere | Glucose | Stored / used |
-| H2O | Roots | O2 | Released |
-| Light | Sun | \u2014 | \u2014 |
-
-\`\`\`text
-Chlorophyll absorbs red and blue wavelengths
-reflecting green -> leaves appear green
-\`\`\`
-
-Key terms:
-- **Chloroplast** - organelle where photosynthesis takes place
-- **Chlorophyll** - pigment that captures light
-- **Stomata** - pores for gas exchange on leaves
-`;
-
-const SAMPLE_CITATIONS_2 = [
-  {
-    documentName: "Biology_Photosynthesis_Overview.pdf",
-    page: 12,
-    confidence: 0.9,
-    text: "Photosynthesis may be summarised by the equation 6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2. The process occurs in two coupled stages: the light-dependent reactions in the thylakoids, and the Calvin cycle in the stroma of the chloroplast.",
-  },
-  {
-    documentName: "Biology_Photosynthesis_Overview.pdf",
-    page: 18,
-    confidence: 0.82,
-    text: "Chlorophyll a and chlorophyll b absorb light primarily in the blue and red regions of the visible spectrum; they reflect green light, which is why plant leaves typically appear green to the human eye.",
-  },
-];
-
-const MOCK_SESSIONS = [
-  {
-    id: "sess-calc-1",
-    title: "Calculus: Limits & Continuity Help",
-    lastMessage: "Always check one-sided limits for piecewise functions...",
-    subject: "Mathematics",
-    pinned: true,
-    messageCount: 8,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-    messages: [
-      {
-        id: "m1",
-        role: "user",
-        content:
-          "Can you explain limits in calculus and walk me through evaluating (x^2 - 4)/(x - 2) as x approaches 2?",
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      },
-      {
-        id: "m2",
-        role: "assistant",
-        content: SAMPLE_ASSISTANT_1,
-        timestamp: new Date(Date.now() - 1000 * 60 * 28).toISOString(),
-        citations: SAMPLE_CITATIONS_1,
-        relatedQuestions: RELATED_QUESTIONS_1,
-      },
-      {
-        id: "m3",
-        role: "user",
-        content:
-          "What about one-sided limits? Can you explain when I need them?",
-        timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      },
-    ],
-  },
-  {
-    id: "sess-bio-2",
-    title: "Photosynthesis Basics for Midterm",
-    lastMessage: "Key stages: Light-Dependent Reactions & Calvin Cycle...",
-    subject: "Biology",
-    pinned: false,
-    messageCount: 4,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    messages: [
-      {
-        id: "bm1",
-        role: "user",
-        content:
-          "Summarize photosynthesis in simple terms with the overall reaction.",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-      },
-      {
-        id: "bm2",
-        role: "assistant",
-        content: SAMPLE_ASSISTANT_2,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString(),
-        citations: SAMPLE_CITATIONS_2,
-        relatedQuestions: [
-          "What factors affect the rate of photosynthesis?",
-          "How do CAM plants differ?",
-          "Explain the role of rubisco briefly.",
-        ],
-      },
-    ],
-  },
-  {
-    id: "sess-phys-3",
-    title: "Newton\u2019s Laws Problem Set",
-    lastMessage:
-      "Force = mass \u00d7 acceleration. Draw the free-body diagram first...",
-    subject: "Physics",
-    pinned: false,
-    messageCount: 6,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-    messages: [],
-  },
-  {
-    id: "sess-hist-4",
-    title: "World War II Essay Outline",
-    lastMessage: "Structure: Introduction + Body x3 + Conclusion...",
-    subject: "History",
-    pinned: false,
-    messageCount: 3,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 28).toISOString(),
-    messages: [],
-  },
-];
+// Removed MOCK_SESSIONS and mock data
 
 const subjectColorFor = (subject) => {
   if (!subject) return SUBJECT_COLORS[0];
@@ -555,9 +348,27 @@ export const ChatPage = () => {
   const isMobile = useIsMobile();
   const { copy, copied } = useCopyToClipboard();
 
-  const [sessions, setSessions] = useState(MOCK_SESSIONS);
+  const [sessions, setSessions] = useState([]);
   const [currentSession, setCurrentSession] = useState(null);
   const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    chatService.listSessions().then(res => {
+      // The API returns a list of sessions, often in the data property
+      const fetchedSessions = res.data || [];
+      // Normalize _id to id so it works with the rest of the component
+      const normalized = fetchedSessions.map(s => ({
+        ...s,
+        id: s._id || s.id,
+        updatedAt: s.updated_at || s.updatedAt || new Date().toISOString(),
+        createdAt: s.created_at || s.createdAt || new Date().toISOString(),
+      }));
+      setSessions(normalized);
+    }).catch(err => {
+      console.error("Failed to load sessions:", err);
+      toast.error("Failed to load chat history");
+    });
+  }, []);
   const [streamingMsgId, setStreamingMsgId] = useState(null);
   const [procStep, setProcStep] = useState(0);
   const [isStreaming, setIsStreaming] = useState(false);

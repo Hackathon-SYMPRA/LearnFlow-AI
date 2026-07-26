@@ -19,10 +19,12 @@ export const formatDateTime = (date) => {
 };
 
 export const formatRelativeTime = (date) => {
+  if (!date) return "Just now";
   const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "Just now";
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
-  const diffSec = Math.round(diffMs / 1000);
+  const diffSec = Math.max(0, Math.round(diffMs / 1000));
   const diffMin = Math.round(diffSec / 60);
   const diffHour = Math.round(diffMin / 60);
   const diffDay = Math.round(diffHour / 24);

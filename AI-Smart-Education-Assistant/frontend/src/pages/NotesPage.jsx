@@ -3,14 +3,9 @@ import { Sparkles, FileText, Download, Copy, Check, ChevronDown } from "lucide-r
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCopyToClipboard } from "@/hooks";
-import { SUBJECTS } from "@/constants";
+import { documentService, aiService } from "@/services";
 
-// Mock documents for selection
-const MOCK_DOCS = [
-  { id: "1", name: "Introduction to Calculus.pdf", subject: "Mathematics" },
-  { id: "2", name: "Physics Chapter 4 - Thermodynamics.pdf", subject: "Physics" },
-  { id: "3", name: "World War II Summary.docx", subject: "History" },
-];
+// Removed MOCK_DOCS
 
 const NOTE_TYPES = [
   { id: "short", label: "Short Notes", desc: "Brief bullet points for quick revision" },
@@ -40,13 +35,20 @@ const MOCK_GENERATED_NOTE = `## Thermodynamics Summary
 `;
 
 export const NotesPage = () => {
+  const [documents, setDocuments] = React.useState([]);
   const [selectedDoc, setSelectedDoc] = useState("");
   const [selectedType, setSelectedType] = useState("detailed");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedNote, setGeneratedNote] = useState("");
   const [copyToClipboard, { success: isCopied }] = useCopyToClipboard();
 
-  const handleGenerate = () => {
+  React.useEffect(() => {
+    documentService.list().then(res => {
+      setDocuments(res.data || []);
+    }).catch(console.error);
+  }, []);
+
+  const handleGenerate = async () => {
     if (!selectedDoc) {
       toast.error("Please select a document first");
       return;
@@ -55,12 +57,18 @@ export const NotesPage = () => {
     setIsGenerating(true);
     setGeneratedNote("");
     
-    // Simulate API Call for generation
-    setTimeout(() => {
-      setGeneratedNote(MOCK_GENERATED_NOTE);
-      setIsGenerating(false);
+    const doc = documents.find(d => (d._id || d.id) === selectedDoc);
+    const docName = doc ? (doc.original_name || doc.file_name || doc.filename || doc.name) : "document";
+
+    try {
+      const response = await aiService.generateNotes(docName, NOTE_TYPES.find(t => t.id === selectedType)?.label || "Summary Notes");
+      setGeneratedNote(response.data?.notes || "No notes generated.");
       toast.success("Notes generated successfully!");
-    }, 2500);
+    } catch (err) {
+      toast.error("Failed to generate notes: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleCopy = () => {
@@ -115,8 +123,8 @@ export const NotesPage = () => {
                 onChange={(e) => setSelectedDoc(e.target.value)}
               >
                 <option value="" disabled>Choose a document...</option>
-                {MOCK_DOCS.map(doc => (
-                  <option key={doc.id} value={doc.id}>{doc.name}</option>
+                {documents.map(doc => (
+                  <option key={doc._id || doc.id} value={doc._id || doc.id}>{doc.original_name || doc.file_name || doc.filename || doc.name}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 pointer-events-none" />
