@@ -11,7 +11,7 @@ async def read_user_me(current_user: UserInDB = Depends(get_current_user)):
     user_response = UserResponse(**current_user.model_dump())
     return SuccessResponse(message="User profile retrieved successfully", data=user_response)
 
-@router.put("/update", response_model=SuccessResponse)
+@router.patch("/profile", response_model=SuccessResponse)
 async def update_user(
     user_in: UserUpdate,
     current_user: UserInDB = Depends(get_current_user)
@@ -42,7 +42,7 @@ async def delete_account(current_user: UserInDB = Depends(get_current_user)):
 from app.models.user import ChangePassword
 from app.core.security import verify_password, get_password_hash
 
-@router.post('/change-password', response_model=SuccessResponse)
+@router.post('/password', response_model=SuccessResponse)
 async def change_password(
     password_in: ChangePassword,
     current_user: UserInDB = Depends(get_current_user)

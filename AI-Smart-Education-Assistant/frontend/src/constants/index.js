@@ -145,7 +145,7 @@ export const QUERY_KEYS = {
 
 export const TOAST_DURATION = 4000;
 
-export const AXIOS_TIMEOUT = 30000;
+export const AXIOS_TIMEOUT = 120000;
 
 export const NAVIGATION_ITEMS = [
   {

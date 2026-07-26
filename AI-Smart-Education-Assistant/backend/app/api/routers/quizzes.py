@@ -27,7 +27,7 @@ async def get_all_quizs(
     current_user: UserInDB = Depends(get_current_user)
 ):
     # In a real app we'd parse all query params into a filters dict.
-    filters = {{}}
+    filters = {}
     sort = [(sort_by, order)] if sort_by else None
     
     objs = await quiz_service.get_by_user(current_user.id, skip=skip, limit=limit, filters=filters, sort=sort)
