@@ -198,6 +198,39 @@ class AIGenerator:
         )
         return response.choices[0].message.content
 
+    async def generate_mindmap(self, context_chunks: List[Dict]) -> str:
+        context_str = self._build_context_string(context_chunks)
+        
+        prompt = f"""
+        Analyze the following study material and generate a mind map structure.
+        Identify the main topic, key subtopics, and their relationships.
+        Output MUST be a valid JSON object with two arrays: "nodes" and "edges".
+        Nodes should have:
+        - id: string (unique identifier, e.g., "1", "2")
+        - position: object with x and y coordinates (e.g., {{ "x": 250, "y": 0 }})
+        - data: object with label (e.g., {{ "label": "Main Topic" }})
+        - style: object for styling (e.g., {{ "background": "#3B82F6", "color": "white", "padding": 10, "borderRadius": 8 }})
+        Edges should have:
+        - id: string (e.g., "e1-2")
+        - source: string (id of source node)
+        - target: string (id of target node)
+        - animated: boolean (e.g. true)
+        
+        Arrange the nodes logically (e.g., main topic at x:400, y:50, subtopics branching out to x:150,400,650 and y:200, etc.).
+        Do not output any markdown formatting like ```json, just the raw JSON object.
+
+        Context:
+        {context_str}
+        """
+        response = await self.client.chat.completions.create(
+            model=self.text_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            response_format={"type": "json_object"}
+        )
+        return response.choices[0].message.content
+
+
     async def generate_teacher_response(self, query: str, context_chunks: List[Dict], mode: str = "Beginner", chat_history: List[Dict] = None) -> str:
         context_str = self._build_context_string(context_chunks)
         

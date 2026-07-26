@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Network, Download, FileText, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,35 +14,10 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import * as htmlToImage from "html-to-image";
-
-// Mock documents for selection
-const MOCK_DOCS = [
-  { id: "1", name: "Introduction to Calculus.pdf", subject: "Mathematics" },
-  { id: "2", name: "Physics Chapter 4 - Thermodynamics.pdf", subject: "Physics" },
-  { id: "3", name: "World War II Summary.docx", subject: "History" },
-];
-
-// Mock AI generated mind map data for Thermodynamics
-const initialNodes = [
-  { id: "1", position: { x: 400, y: 50 }, data: { label: "Thermodynamics" }, style: { background: "#3B82F6", color: "white", fontWeight: "bold", padding: 15, borderRadius: 8, width: 200, textAlign: 'center' } },
-  { id: "2", position: { x: 150, y: 200 }, data: { label: "1st Law (Energy Conservation)" }, style: { background: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: 8, padding: 10 } },
-  { id: "3", position: { x: 400, y: 200 }, data: { label: "2nd Law (Entropy)" }, style: { background: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: 8, padding: 10 } },
-  { id: "4", position: { x: 650, y: 200 }, data: { label: "3rd Law (Absolute Zero)" }, style: { background: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: 8, padding: 10 } },
-  { id: "5", position: { x: 50, y: 350 }, data: { label: "Internal Energy (U)" }, style: { background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8, padding: 10 } },
-  { id: "6", position: { x: 250, y: 350 }, data: { label: "Heat (Q) & Work (W)" }, style: { background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8, padding: 10 } },
-  { id: "7", position: { x: 400, y: 350 }, data: { label: "Irreversible Processes" }, style: { background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8, padding: 10 } },
-];
-
-const initialEdges = [
-  { id: "e1-2", source: "1", target: "2", animated: true },
-  { id: "e1-3", source: "1", target: "3", animated: true },
-  { id: "e1-4", source: "1", target: "4", animated: true },
-  { id: "e2-5", source: "2", target: "5" },
-  { id: "e2-6", source: "2", target: "6" },
-  { id: "e3-7", source: "3", target: "7" },
-];
+import { documentService, aiService } from "../services";
 
 export const MindMapPage = () => {
+  const [documents, setDocuments] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
@@ -53,7 +28,19 @@ export const MindMapPage = () => {
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
 
-  const handleGenerate = () => {
+  useEffect(() => {
+    const fetchDocs = async () => {
+      try {
+        const response = await documentService.list();
+        setDocuments(response.data || []);
+      } catch (err) {
+        toast.error("Failed to load documents");
+      }
+    };
+    fetchDocs();
+  }, []);
+
+  const handleGenerate = async () => {
     if (!selectedDoc) {
       toast.error("Please select a document first");
       return;
@@ -62,14 +49,22 @@ export const MindMapPage = () => {
     setIsGenerating(true);
     setIsGenerated(false);
     
-    // Simulate AI Generation
-    setTimeout(() => {
-      setNodes(initialNodes);
-      setEdges(initialEdges);
+    try {
+      const response = await aiService.generateMindMap(selectedDoc);
+      const data = response.data?.mindmap;
+      if (data && data.nodes && data.edges) {
+        setNodes(data.nodes);
+        setEdges(data.edges);
+        setIsGenerated(true);
+        toast.success("Mind Map generated successfully!");
+      } else {
+        toast.error("Failed to parse mind map data");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to generate mind map");
+    } finally {
       setIsGenerating(false);
-      setIsGenerated(true);
-      toast.success("Mind Map generated successfully!");
-    }, 2500);
+    }
   };
 
   const handleDownload = () => {
@@ -123,8 +118,8 @@ export const MindMapPage = () => {
                 onChange={(e) => setSelectedDoc(e.target.value)}
               >
                 <option value="" disabled>Choose a document...</option>
-                {MOCK_DOCS.map(doc => (
-                  <option key={doc.id} value={doc.id}>{doc.name}</option>
+                {documents.map(doc => (
+                  <option key={doc._id || doc.id} value={doc._id || doc.id}>{doc.filename || doc.name}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 pointer-events-none" />
