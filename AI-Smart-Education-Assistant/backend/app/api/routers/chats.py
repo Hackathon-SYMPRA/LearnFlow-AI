@@ -12,12 +12,17 @@ from pydantic import BaseModel
 import json
 router = APIRouter()
 
+class ChatCreateRequest(BaseModel):
+    title: Optional[str] = "New Chat"
+    documentIds: Optional[List[str]] = []
+
 @router.post("/", response_model=SuccessResponse)
 async def create_chat(
-    obj_in: ChatBase,
+    obj_in: ChatCreateRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
-    obj = await chat_service.create(obj_in, current_user.id)
+    chat_base = ChatBase(user_id=current_user.id, title=obj_in.title)
+    obj = await chat_service.create(chat_base, current_user.id)
     return SuccessResponse(message="Chat created successfully", data=obj.model_dump())
 
 @router.get("/", response_model=SuccessResponse)

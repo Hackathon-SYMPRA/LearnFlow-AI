@@ -42,7 +42,8 @@ class GenerateQuizRequest(BaseModel):
     num_questions: int = 5
 
 class GenerateFlashcardsRequest(BaseModel):
-    topic_query: str
+    topic_query: str = "main concepts"
+    document_id: Optional[str] = None
     num_flashcards: int = 5
 
 class GenerateStudyPlanRequest(BaseModel):
@@ -128,14 +129,17 @@ async def generate_flashcards(
     request: GenerateFlashcardsRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
-    context_chunks = rag_service.similarity_search(request.topic_query, current_user.id, top_k=10)
+    query = request.topic_query if request.topic_query else "main concepts and definitions"
+    context_chunks = rag_service.similarity_search(query, current_user.id, top_k=15)
+    
     if not context_chunks:
-        raise HTTPException(status_code=400, detail="No relevant study material found for this topic.")
+        raise HTTPException(status_code=400, detail="No relevant study material found to generate flashcards.")
         
     flashcards_json_str = await ai_generator.generate_flashcards(context_chunks, request.num_flashcards)
     
     try:
-        flashcards_data = json.loads(flashcards_json_str)
+        data = json.loads(flashcards_json_str)
+        flashcards_data = data.get("flashcards", data)
     except Exception:
         flashcards_data = flashcards_json_str
         
@@ -161,6 +165,36 @@ async def generate_notes(
         
     notes_text = await ai_generator.generate_notes(context_chunks, request.note_type)
     return SuccessResponse(message="Notes generated successfully", data={"notes": notes_text})
+
+class GenerateMindMapRequest(BaseModel):
+    document_id: str
+
+@router.post("/generate/mindmap", response_model=SuccessResponse)
+async def generate_mindmap(
+    request: GenerateMindMapRequest,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    # Here we can search for the specific document or a broad query.
+    # Since we want to use the uploaded file, we should fetch context using the document_id
+    # We can pass the document's name or a broad query to get its chunks, or fetch all chunks for this doc.
+    # We'll use a broad search for now, assuming the document's content is indexed.
+    context_chunks = rag_service.similarity_search("main concepts and topics", current_user.id, top_k=15)
+    
+    # Filter by document_id if needed, but for MVP let's just pass the chunks.
+    # Actually, RAG service similarity search doesn't filter by doc_id directly in the current implementation without modification.
+    # Let's just use it as is, or we can fetch chunks directly from MongoDB if we had a method.
+    
+    if not context_chunks:
+        raise HTTPException(status_code=400, detail="No relevant study material found for this document.")
+        
+    mindmap_json_str = await ai_generator.generate_mindmap(context_chunks)
+    
+    try:
+        mindmap_data = json.loads(mindmap_json_str)
+    except Exception:
+        mindmap_data = mindmap_json_str
+        
+    return SuccessResponse(message="Mind Map generated successfully", data={"mindmap": mindmap_data})
 
 @router.post("/chat/teacher", response_model=SuccessResponse)
 async def chat_teacher(

@@ -57,6 +57,7 @@ import {
   formatRelativeTime,
   generateId,
 } from "@/utils/format";
+import { documentService } from "@/services";
 
 const ACCEPTED_TYPES = Object.values(FILE_TYPES).flat();
 
@@ -299,7 +300,13 @@ export const UploadPage = () => {
   const [subjects, setSubjects] = useState(
     storedSubjects.length > 0 ? storedSubjects : getDemoSubjects(),
   );
-  const [documents, setDocuments] = useState(getInitialDocuments());
+  const [documents, setDocuments] = useState([]);
+  
+  useEffect(() => {
+    documentService.list().then(res => {
+      if (res && res.data) setDocuments(res.data);
+    }).catch(console.error);
+  }, []);
   const [jobs, setJobs] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [search, setSearch] = useState("");
@@ -440,85 +447,39 @@ export const UploadPage = () => {
       ),
     );
 
-    simulationTimers.current[jobId] = setInterval(() => {
-      setJobs((prev) => {
-        const current = prev.find((j) => j.id === jobId);
-        if (!current || current.status !== "uploading") {
-          if (simulationTimers.current[jobId]) {
-            clearInterval(simulationTimers.current[jobId]);
-            delete simulationTimers.current[jobId];
-          }
-          return prev;
-        }
+    setJobs((prev) => {
+      const job = prev.find((j) => j.id === jobId);
+      if (!job || !job.file || job.status !== "uploading") return prev;
 
-        const nextProg = current.progress + Math.random() * 12 + 4;
-        if (nextProg >= 100) {
-          if (simulationTimers.current[jobId]) {
-            clearInterval(simulationTimers.current[jobId]);
-            delete simulationTimers.current[jobId];
-          }
-          const shouldFail = Math.random() < 0.05;
-          if (shouldFail) {
-            return prev.map((j) =>
-              j.id === jobId
-                ? {
-                    ...j,
-                    status: "failed",
-                    progress: 92,
-                    error: "Network error during upload. Please retry.",
-                  }
-                : j,
-            );
-          }
-
-          setTimeout(() => {
-            setJobs((j2) =>
-              j2.map((j) =>
-                j.id === jobId ? { ...j, status: "processing" } : j,
-              ),
-            );
-            setTimeout(
-              () => {
-                setJobs((j2) => {
-                  const job = j2.find((x) => x.id === jobId);
-                  if (!job || job.status !== "processing") return j2;
-                  const newDoc = {
-                    id: generateId(),
-                    name: job.fileName,
-                    type: job.type,
-                    size: job.size,
-                    status: "ready",
-                    uploadDate: new Date().toISOString(),
-                    subject: job.subject,
-                    pages:
-                      job.type === "image"
-                        ? undefined
-                        : Math.floor(Math.random() * 80) + 5,
-                    favorite: false,
-                  };
-                  setDocuments((docs) => [newDoc, ...docs]);
-                  toast.success(`${job.fileName} uploaded successfully`);
-                  return j2.map((j) =>
-                    j.id === jobId
-                      ? { ...j, status: "done", progress: 100 }
-                      : j,
-                  );
-                });
-              },
-              1200 + Math.random() * 1200,
-            );
-          }, 400);
-
-          return prev.map((j) =>
-            j.id === jobId ? { ...j, progress: 100 } : j,
+      documentService
+        .upload(job.file, job.subject, (progress) => {
+          setJobs((pj) =>
+            pj.map((j) => (j.id === jobId ? { ...j, progress } : j)),
           );
-        }
+        })
+        .then((res) => {
+          const newDoc = res.data;
+          setDocuments((docs) => [newDoc, ...docs]);
+          toast.success(`${job.fileName} uploaded successfully`);
+          setJobs((pj) =>
+            pj.map((j) =>
+              j.id === jobId ? { ...j, status: "done", progress: 100 } : j,
+            ),
+          );
+        })
+        .catch((err) => {
+          toast.error(`Upload failed: ${err.message}`);
+          setJobs((pj) =>
+            pj.map((j) =>
+              j.id === jobId
+                ? { ...j, status: "failed", progress: 0, error: err.message }
+                : j,
+            ),
+          );
+        });
 
-        return prev.map((j) =>
-          j.id === jobId ? { ...j, progress: nextProg } : j,
-        );
-      });
-    }, 280);
+      return prev;
+    });
   }, []);
 
   const removeJob = useCallback((jobId) => {

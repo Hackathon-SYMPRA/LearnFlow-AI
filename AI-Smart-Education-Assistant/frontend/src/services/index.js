@@ -271,3 +271,9 @@ export const userService = {
     return api.post("/users/password", { currentPassword, newPassword });
   },
 };
+
+export const aiService = {
+  async generateMindMap(document_id) {
+    return api.post("/generate/mindmap", { document_id });
+  },
+};
