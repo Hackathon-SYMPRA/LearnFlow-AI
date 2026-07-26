@@ -41,6 +41,35 @@ class AIGenerator:
         response = await self.model.generate_content_async(prompt)
         return response.text
 
+    async def generate_chat_stream(self, query: str, context_chunks: List[Dict], chat_history: List[Dict] = None):
+        context_str = self._build_context_string(context_chunks)
+        
+        history_str = ""
+        if chat_history:
+            history_str = "Previous Conversation:\n"
+            for msg in chat_history:
+                role = msg.get("role", "User")
+                content = msg.get("content", "")
+                history_str += f"{role.capitalize()}: {content}\n"
+            history_str += "\n"
+
+        prompt = f"""
+        You are an intelligent educational assistant. Use the following extracted context from study materials to answer the student's question.
+        If the answer is not in the context, inform the student that you don't have sufficient study material on this, but provide a helpful, general answer if possible while mentioning uncertainty.
+        Always cite the source document name if you use context.
+
+        {history_str}Context:
+        {context_str}
+
+        Student's Question:
+        {query}
+        """
+        
+        response = await self.model.generate_content_async(prompt, stream=True)
+        async for chunk in response:
+            if chunk.text:
+                yield chunk.text
+
     async def generate_quiz(self, context_chunks: List[Dict], difficulty: str = "Medium", num_questions: int = 5) -> str:
         context_str = self._build_context_string(context_chunks)
         

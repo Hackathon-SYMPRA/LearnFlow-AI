@@ -40,6 +40,7 @@ import {
   Eye,
   Clock,
   Square,
+  Volume2,
 } from "lucide-react";
 import { chatService } from "@/services";
 import { ROUTES, SUGGESTED_PROMPTS, SUBJECT_COLORS } from "@/constants";
@@ -572,7 +573,7 @@ export const ChatPage = () => {
   const [snippetModal, setSnippetModal] = useState(null);
 
   const [reactions, setReactions] = useState({});
-
+  const [speakingId, setSpeakingId] = useState(null);
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
@@ -836,6 +837,21 @@ export const ChatPage = () => {
       [msgId]: prev[msgId] === reaction ? null : reaction,
     }));
   }, []);
+
+  const handleSpeak = useCallback((text, messageId) => {
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      if (speakingId === messageId) {
+        setSpeakingId(null);
+        return;
+      }
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => setSpeakingId(null);
+    utterance.onerror = () => setSpeakingId(null);
+    setSpeakingId(messageId);
+    window.speechSynthesis.speak(utterance);
+  }, [speakingId]);
 
   const regenerateLast = useCallback(async () => {
     if (!currentSession || isStreaming) return;
@@ -1825,6 +1841,21 @@ export const ChatPage = () => {
                                       )}
                                       <span className="hidden sm:inline">
                                         {copied ? "Copied" : "Copy"}
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSpeak(m.content, m.id)}
+                                      className="inline-flex items-center gap-1 h-7 px-2 rounded-lg text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                      title={speakingId === m.id ? "Stop reading" : "Read aloud"}
+                                    >
+                                      {speakingId === m.id ? (
+                                        <Square className="h-3.5 w-3.5" />
+                                      ) : (
+                                        <Volume2 className="h-3.5 w-3.5" />
+                                      )}
+                                      <span className="hidden sm:inline">
+                                        {speakingId === m.id ? "Stop" : "Listen"}
                                       </span>
                                     </button>
                                     <button

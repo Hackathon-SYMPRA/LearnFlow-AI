@@ -5,7 +5,11 @@ from app.models.user import UserInDB
 from app.schemas.response import SuccessResponse
 from app.models.chat import ChatBase, ChatInDB
 from app.services.chat import chat_service
-
+from app.services.ai.generator import ai_generator
+from app.services.ai.rag_service import rag_service
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+import json
 router = APIRouter()
 
 @router.post("/", response_model=SuccessResponse)
@@ -43,8 +47,8 @@ async def get_chat(id: str, current_user: UserInDB = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Chat not found")
     return SuccessResponse(message="Chat retrieved successfully", data=obj.model_dump())
 
-@router.put("/{id}", response_model=SuccessResponse)
-async def update_chat(
+@router.patch("/{id}", response_model=SuccessResponse)
+async def update_chat_partial(
     id: str,
     update_data: Dict[str, Any],
     current_user: UserInDB = Depends(get_current_user)
@@ -53,6 +57,62 @@ async def update_chat(
     if not updated_obj:
         raise HTTPException(status_code=404, detail="Chat not found or update failed")
     return SuccessResponse(message="Chat updated successfully", data=updated_obj.model_dump())
+
+class MessageRequest(BaseModel):
+    message: str
+
+@router.post("/{id}/messages", response_model=SuccessResponse)
+async def send_message(
+    id: str,
+    request: MessageRequest,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    chat = await chat_service.get_by_id(id, current_user.id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    # Process message with AI
+    context_chunks = rag_service.similarity_search(request.message, current_user.id, top_k=5)
+    history = chat.messages
+    response_text = await ai_generator.generate_chat_response(request.message, context_chunks, history)
+    
+    # Append to chat
+    new_messages = history + [
+        {"role": "user", "content": request.message},
+        {"role": "assistant", "content": response_text}
+    ]
+    await chat_service.update(id, current_user.id, {"messages": new_messages})
+    
+    return SuccessResponse(message="Message processed", data={"response": response_text})
+
+@router.post("/{id}/messages/stream")
+async def send_message_stream(
+    id: str,
+    request: MessageRequest,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    chat = await chat_service.get_by_id(id, current_user.id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    context_chunks = rag_service.similarity_search(request.message, current_user.id, top_k=5)
+    history = chat.messages
+    
+    # Save user message immediately
+    user_msgs = history + [{"role": "user", "content": request.message}]
+    await chat_service.update(id, current_user.id, {"messages": user_msgs})
+
+    async def event_generator():
+        full_response = ""
+        async for chunk in ai_generator.generate_chat_stream(request.message, context_chunks, history):
+            if chunk:
+                full_response += chunk
+                yield chunk
+        # Save AI response after stream completes
+        final_msgs = user_msgs + [{"role": "assistant", "content": full_response}]
+        await chat_service.update(id, current_user.id, {"messages": final_msgs})
+
+    return StreamingResponse(event_generator(), media_type="text/plain")
 
 @router.delete("/{id}", response_model=SuccessResponse)
 async def delete_chat(id: str, current_user: UserInDB = Depends(get_current_user)):
