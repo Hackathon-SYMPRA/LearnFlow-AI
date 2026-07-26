@@ -685,10 +685,11 @@ export const ChatPage = () => {
     if (isStreaming) return;
     try {
       const created = await chatService.createSession();
+      const sessionData = created.data || created;
       const newSess = {
-        ...created,
-        id: created.id ?? `sess-${generateId()}`,
-        title: created.title ?? "New Chat",
+        ...sessionData,
+        id: sessionData.id ?? `sess-${generateId()}`,
+        title: sessionData.title ?? "New Chat",
         lastMessage: "",
         messages: [],
         createdAt: new Date().toISOString(),
