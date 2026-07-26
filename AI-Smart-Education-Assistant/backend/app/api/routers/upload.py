@@ -51,3 +51,12 @@ async def list_documents(current_user: UserInDB = Depends(get_current_user)):
         message="Documents retrieved successfully", 
         data=[DocumentResponse(**doc.model_dump()).model_dump() for doc in docs]
     )
+
+@router.delete("/{id}", response_model=SuccessResponse)
+async def delete_document(id: str, current_user: UserInDB = Depends(get_current_user)):
+    success = await document_repo.delete(id, current_user.id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Document not found or delete failed")
+    
+    # Optional: We could also delete the physical file and ChromaDB vectors here.
+    return SuccessResponse(message="Document deleted successfully")

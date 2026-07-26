@@ -594,10 +594,15 @@ export const UploadPage = () => {
     enqueueFiles(e.dataTransfer.files);
   };
 
-  const handleDeleteDoc = (docId) => {
+  const handleDeleteDoc = async (docId) => {
     if (window.confirm("Delete this document? This cannot be undone.")) {
-      setDocuments((prev) => prev.filter((d) => d.id !== docId));
-      toast.success("Document deleted");
+      try {
+        await documentService.remove(docId);
+        setDocuments((prev) => prev.filter((d) => d.id !== docId));
+        toast.success("Document deleted");
+      } catch (error) {
+        toast.error("Failed to delete document from server");
+      }
     }
   };
 
