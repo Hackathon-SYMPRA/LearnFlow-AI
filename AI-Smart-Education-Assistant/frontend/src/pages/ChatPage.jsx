@@ -528,6 +528,13 @@ const renderMarkdown = (raw) => {
   return out.join("\n");
 };
 
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = error => reject(error);
+});
+
 const downloadJSON = (filename, data) => {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: "application/json",
@@ -561,6 +568,7 @@ export const ChatPage = () => {
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 200);
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
 
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -899,6 +907,20 @@ export const ChatPage = () => {
         }
       }
 
+      const base64Images = [];
+      if (attachments?.length) {
+        for (const att of attachments) {
+          if (att.type === "image" && att.file) {
+            try {
+              const b64 = await fileToBase64(att.file);
+              base64Images.push(b64);
+            } catch (e) {
+              console.error("Failed to read image", e);
+            }
+          }
+        }
+      }
+
       const userMsg = {
         id: `u-${generateId()}`,
         role: "user",
@@ -915,8 +937,6 @@ export const ChatPage = () => {
         content: "",
         timestamp: new Date().toISOString(),
         isStreaming: true,
-        citations: SAMPLE_CITATIONS_1,
-        relatedQuestions: RELATED_QUESTIONS_1,
       };
 
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
@@ -924,123 +944,39 @@ export const ChatPage = () => {
       setIsStreaming(true);
       setProcStep(0);
 
-      const stepTimers = [];
-      stepTimers.push(
-        setTimeout(() => setProcStep(1), 700),
-        setTimeout(() => setProcStep(2), 1500),
-        setTimeout(() => setProcStep(3), 2400),
-      );
-
-      const cleanupSteps = () => stepTimers.forEach((t) => clearTimeout(t));
-
-      const fallbackResponse = isRegenerate
-        ? SAMPLE_ASSISTANT_1
-        : SAMPLE_ASSISTANT_1;
-
       let appended = "";
-      let chunkIdx = 0;
-      const target = fallbackResponse;
-
       let stopped = false;
-      window.__chatStop = () => {
-        stopped = true;
-      };
-
-      const intervalId = setInterval(() => {
-        if (stopped) {
-          clearInterval(intervalId);
-          cleanupSteps();
-          setIsStreaming(false);
-          setStreamingMsgId(null);
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, content: appended, isStreaming: false }
-                : m,
-            ),
-          );
-          setSessions((prev) =>
-            prev.map((s) =>
-              s.id === session.id
-                ? {
-                    ...s,
-                    lastMessage: appended.slice(0, 80) || s.lastMessage,
-                    updatedAt: new Date().toISOString(),
-                    messageCount: (s.messageCount ?? 0) + 2,
-                  }
-                : s,
-            ),
-          );
-          setCurrentSession((prev) =>
-            prev && prev.id === session.id
-              ? { ...prev, updatedAt: new Date().toISOString() }
-              : prev,
-          );
-          return;
-        }
-        const chunkSize = Math.max(2, Math.floor(Math.random() * 8) + 3);
-        const nextSlice = Math.min(target.length, chunkIdx + chunkSize);
-        appended = target.slice(0, nextSlice);
-        chunkIdx = nextSlice;
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: appended } : m,
-          ),
-        );
-        if (chunkIdx >= target.length) {
-          clearInterval(intervalId);
-          cleanupSteps();
-          setProcStep(3);
-          setTimeout(() => {
-            setIsStreaming(false);
-            setStreamingMsgId(null);
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId
-                  ? { ...m, content: appended, isStreaming: false }
-                  : m,
-              ),
-            );
-            setSessions((prev) =>
-              prev.map((s) =>
-                s.id === session.id
-                  ? {
-                      ...s,
-                      lastMessage: appended.slice(0, 80) || s.lastMessage,
-                      updatedAt: new Date().toISOString(),
-                      messageCount: (s.messageCount ?? 0) + 2,
-                    }
-                  : s,
-              ),
-            );
-            setCurrentSession((prev) =>
-              prev && prev.id === session.id
-                ? { ...prev, updatedAt: new Date().toISOString() }
-                : prev,
-            );
-          }, 250);
-        }
-      }, 18);
+      window.__chatStop = () => { stopped = true; };
 
       try {
         chatService.streamMessage(
           session.id,
           text,
-          () => {
-            /* chunk handled by mock above */
+          { language: selectedLanguage, images: base64Images },
+          (chunk) => {
+             if (stopped) return;
+             setProcStep(3); // done thinking
+             appended += chunk;
+             setMessages((prev) =>
+               prev.map((m) => m.id === assistantId ? { ...m, content: appended } : m)
+             );
           },
           () => {
-            /* done handled above */
+             setIsStreaming(false);
+             setStreamingMsgId(null);
+             setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, isStreaming: false } : m));
           },
-          () => {
-            /* ignore errors */
-          },
+          (error) => {
+             console.error("Stream error", error);
+             setIsStreaming(false);
+             setStreamingMsgId(null);
+          }
         );
-      } catch {
-        /* ignore */
+      } catch (e) {
+        console.error(e);
       }
     },
-    [currentSession, isStreaming, navigate],
+    [currentSession, isStreaming, navigate, selectedLanguage],
   );
 
   const handleStop = useCallback(() => {
@@ -1453,6 +1389,15 @@ export const ChatPage = () => {
                   {currentSession.subject}
                 </span>
               )}
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="ml-2 text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-md px-2 py-1 outline-none text-slate-700 dark:text-slate-300 cursor-pointer"
+              >
+                <option value="English">English</option>
+                <option value="Marathi">Marathi</option>
+                <option value="Hindi">Hindi</option>
+              </select>
             </div>
             <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
               <Users className="h-3.5 w-3.5" />1 user + 1 AI

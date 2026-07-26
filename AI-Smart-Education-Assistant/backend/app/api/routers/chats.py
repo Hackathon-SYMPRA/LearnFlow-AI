@@ -60,6 +60,8 @@ async def update_chat_partial(
 
 class MessageRequest(BaseModel):
     message: str
+    language: Optional[str] = "English"
+    images: Optional[List[str]] = None
 
 @router.post("/{id}/messages", response_model=SuccessResponse)
 async def send_message(
@@ -74,7 +76,13 @@ async def send_message(
     # Process message with AI
     context_chunks = rag_service.similarity_search(request.message, current_user.id, top_k=5)
     history = chat.messages
-    response_text = await ai_generator.generate_chat_response(request.message, context_chunks, history)
+    response_text = await ai_generator.generate_chat_response(
+        query=request.message, 
+        context_chunks=context_chunks, 
+        chat_history=history,
+        language=request.language,
+        images=request.images
+    )
     
     # Append to chat
     new_messages = history + [
@@ -104,7 +112,13 @@ async def send_message_stream(
 
     async def event_generator():
         full_response = ""
-        async for chunk in ai_generator.generate_chat_stream(request.message, context_chunks, history):
+        async for chunk in ai_generator.generate_chat_stream(
+            query=request.message, 
+            context_chunks=context_chunks, 
+            chat_history=history,
+            language=request.language,
+            images=request.images
+        ):
             if chunk:
                 full_response += chunk
                 yield chunk

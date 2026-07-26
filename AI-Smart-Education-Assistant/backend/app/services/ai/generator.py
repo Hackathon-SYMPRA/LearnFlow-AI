@@ -1,9 +1,13 @@
-import google.generativeai as genai
+import os
 from typing import List, Dict
+from groq import AsyncGroq
+import base64
 
 class AIGenerator:
     def __init__(self):
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY", "fallback-key"))
+        self.text_model = "llama-3.1-8b-instant"
+        self.vision_model = "llama-3.2-11b-vision-preview"
 
     def _build_context_string(self, chunks: List[Dict]) -> str:
         context_str = ""
@@ -14,61 +18,119 @@ class AIGenerator:
             context_str += f"--- Source {i+1} (Doc: {doc_id}) ---\n{content}\n\n"
         return context_str
 
-    async def generate_chat_response(self, query: str, context_chunks: List[Dict], chat_history: List[Dict] = None) -> str:
+    async def generate_chat_response(
+        self, 
+        query: str, 
+        context_chunks: List[Dict], 
+        chat_history: List[Dict] = None,
+        language: str = "English",
+        images: List[str] = None
+    ) -> str:
         context_str = self._build_context_string(context_chunks)
         
-        history_str = ""
-        if chat_history:
-            history_str = "Previous Conversation:\n"
-            for msg in chat_history:
-                role = msg.get("role", "User")
-                content = msg.get("content", "")
-                history_str += f"{role.capitalize()}: {content}\n"
-            history_str += "\n"
-
-        prompt = f"""
+        system_prompt = f"""
         You are an intelligent educational assistant. Use the following extracted context from study materials to answer the student's question.
         If the answer is not in the context, inform the student that you don't have sufficient study material on this, but provide a helpful, general answer if possible while mentioning uncertainty.
         Always cite the source document name if you use context.
+        Please respond entirely in the {language} language.
 
-        {history_str}Context:
+        Context:
         {context_str}
-
-        Student's Question:
-        {query}
         """
-        
-        response = await self.model.generate_content_async(prompt)
-        return response.text
 
-    async def generate_chat_stream(self, query: str, context_chunks: List[Dict], chat_history: List[Dict] = None):
+        messages = [{"role": "system", "content": system_prompt}]
+
+        if chat_history:
+            for msg in chat_history:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if role not in ["system", "user", "assistant"]:
+                    role = "user"
+                messages.append({"role": role, "content": content})
+
+        if images and len(images) > 0:
+            content = [{"type": "text", "text": query}]
+            for img_b64 in images:
+                if "," in img_b64:
+                    img_b64 = img_b64.split(",")[1]
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{img_b64}"
+                    }
+                })
+            messages.append({"role": "user", "content": content})
+            model_to_use = self.vision_model
+        else:
+            messages.append({"role": "user", "content": query})
+            model_to_use = self.text_model
+        
+        response = await self.client.chat.completions.create(
+            model=model_to_use,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=1024,
+        )
+        return response.choices[0].message.content
+
+    async def generate_chat_stream(
+        self, 
+        query: str, 
+        context_chunks: List[Dict], 
+        chat_history: List[Dict] = None,
+        language: str = "English",
+        images: List[str] = None
+    ):
         context_str = self._build_context_string(context_chunks)
         
-        history_str = ""
-        if chat_history:
-            history_str = "Previous Conversation:\n"
-            for msg in chat_history:
-                role = msg.get("role", "User")
-                content = msg.get("content", "")
-                history_str += f"{role.capitalize()}: {content}\n"
-            history_str += "\n"
-
-        prompt = f"""
+        system_prompt = f"""
         You are an intelligent educational assistant. Use the following extracted context from study materials to answer the student's question.
         If the answer is not in the context, inform the student that you don't have sufficient study material on this, but provide a helpful, general answer if possible while mentioning uncertainty.
         Always cite the source document name if you use context.
+        Please respond entirely in the {language} language.
 
-        {history_str}Context:
+        Context:
         {context_str}
-
-        Student's Question:
-        {query}
         """
+
+        messages = [{"role": "system", "content": system_prompt}]
+
+        if chat_history:
+            for msg in chat_history:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if role not in ["system", "user", "assistant"]:
+                    role = "user"
+                messages.append({"role": role, "content": content})
+
+        if images and len(images) > 0:
+            content = [{"type": "text", "text": query}]
+            for img_b64 in images:
+                if "," in img_b64:
+                    img_b64 = img_b64.split(",")[1]
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{img_b64}"
+                    }
+                })
+            messages.append({"role": "user", "content": content})
+            model_to_use = self.vision_model
+        else:
+            messages.append({"role": "user", "content": query})
+            model_to_use = self.text_model
         
-        response = await self.model.generate_content_async(prompt, stream=True)
-        async for chunk in response:
-            if chunk.text:
-                yield chunk.text
+        stream = await self.client.chat.completions.create(
+            model=model_to_use,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=1024,
+            stream=True
+        )
+        
+        async for chunk in stream:
+            if chunk.choices[0].delta.content is not None:
+                yield chunk.choices[0].delta.content
 
     async def generate_quiz(self, context_chunks: List[Dict], difficulty: str = "Medium", num_questions: int = 5) -> str:
         context_str = self._build_context_string(context_chunks)
@@ -81,8 +143,12 @@ class AIGenerator:
         Context:
         {context_str}
         """
-        response = await self.model.generate_content_async(prompt)
-        return response.text
+        response = await self.client.chat.completions.create(
+            model=self.text_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return response.choices[0].message.content
 
     async def generate_flashcards(self, context_chunks: List[Dict], num_flashcards: int = 5) -> str:
         context_str = self._build_context_string(context_chunks)
@@ -95,8 +161,12 @@ class AIGenerator:
         Context:
         {context_str}
         """
-        response = await self.model.generate_content_async(prompt)
-        return response.text
+        response = await self.client.chat.completions.create(
+            model=self.text_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return response.choices[0].message.content
         
     async def generate_study_plan(self, topics: str, days: int, hours_per_day: int) -> str:
         prompt = f"""
@@ -104,8 +174,12 @@ class AIGenerator:
         They have {days} days until the exam, and can study {hours_per_day} hours per day.
         Provide a day-by-day structured plan.
         """
-        response = await self.model.generate_content_async(prompt)
-        return response.text
+        response = await self.client.chat.completions.create(
+            model=self.text_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return response.choices[0].message.content
 
     async def generate_notes(self, context_chunks: List[Dict], note_type: str = "Summary Notes") -> str:
         context_str = self._build_context_string(context_chunks)
@@ -117,8 +191,12 @@ class AIGenerator:
         Context:
         {context_str}
         """
-        response = await self.model.generate_content_async(prompt)
-        return response.text
+        response = await self.client.chat.completions.create(
+            model=self.text_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return response.choices[0].message.content
 
     async def generate_teacher_response(self, query: str, context_chunks: List[Dict], mode: str = "Beginner", chat_history: List[Dict] = None) -> str:
         context_str = self._build_context_string(context_chunks)
@@ -131,28 +209,31 @@ class AIGenerator:
         else:
             mode_instruction = "Explain step-by-step and provide clear examples like a supportive teacher."
 
-        history_str = ""
-        if chat_history:
-            history_str = "Previous Conversation:\n"
-            for msg in chat_history:
-                role = msg.get("role", "User")
-                content = msg.get("content", "")
-                history_str += f"{role.capitalize()}: {content}\n"
-            history_str += "\n"
-
-        prompt = f"""
+        system_prompt = f"""
         You are an expert Teacher. {mode_instruction}
         Use the following extracted context from study materials to answer the student's question.
         If the answer is not in the context, inform the student gently, but provide a helpful answer mentioning uncertainty.
 
-        {history_str}Context:
+        Context:
         {context_str}
-
-        Student's Question:
-        {query}
         """
-        
-        response = await self.model.generate_content_async(prompt)
-        return response.text
+        messages = [{"role": "system", "content": system_prompt}]
+
+        if chat_history:
+            for msg in chat_history:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if role not in ["system", "user", "assistant"]:
+                    role = "user"
+                messages.append({"role": role, "content": content})
+
+        messages.append({"role": "user", "content": query})
+
+        response = await self.client.chat.completions.create(
+            model=self.text_model,
+            messages=messages,
+            temperature=0.7
+        )
+        return response.choices[0].message.content
 
 ai_generator = AIGenerator()

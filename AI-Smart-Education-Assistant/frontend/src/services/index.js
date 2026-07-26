@@ -95,18 +95,18 @@ export const chatService = {
     return api.get(`/chat/sessions/${id}`);
   },
 
-  async sendMessage(sessionId, message) {
-    return api.post(`/chat/sessions/${sessionId}/messages`, { message });
+  async sendMessage(sessionId, message, options = {}) {
+    return api.post(`/chat/sessions/${sessionId}/messages`, { message, ...options });
   },
 
   async deleteSession(id) {
     return api.delete(`/chat/sessions/${id}`);
   },
 
-  streamMessage(sessionId, message, onChunk, onDone, onError) {
+  streamMessage(sessionId, message, options = {}, onChunk, onDone, onError) {
     api.stream(
       `/chat/sessions/${sessionId}/messages/stream`,
-      { message },
+      { message, ...options },
       onChunk,
       onDone,
       onError,
