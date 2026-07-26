@@ -31,8 +31,8 @@ async def upload_document(
     doc_response = DocumentResponse(**doc.model_dump())
     
     metadata = {
-        "document_id": doc.id,
-        "user_id": current_user.id
+        "document_id": str(doc.id),
+        "user_id": str(current_user.id)
     }
     
     background_tasks.add_task(
