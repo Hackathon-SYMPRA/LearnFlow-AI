@@ -706,14 +706,18 @@ export const ChatPage = () => {
         setSessions((prev) => [session, ...prev]);
         navigate(`${ROUTES.chat}/${newId}`, { replace: true });
         try {
-          const created = await chatService.createSession(session.title);
-          if (created?.id && created.id !== newId) {
-            session = { ...session, id: created.id };
-            setSessions((prev) =>
-              prev.map((s) => (s.id === newId ? session : s)),
-            );
-            navigate(`${ROUTES.chat}/${created.id}`, { replace: true });
-          }
+          try {
+            const created = await chatService.createSession(session.title);
+            const sessionData = created.data || created;
+            const createdId = sessionData.id || sessionData._id;
+            if (createdId && createdId !== newId) {
+              session = { ...session, id: createdId };
+              setSessions((prev) =>
+                prev.map((s) => (s.id === newId ? session : s)),
+              );
+              navigate(`${ROUTES.chat}/${createdId}`, { replace: true });
+            }
+          } catch {}
         } catch {
           /* ignore */
         }

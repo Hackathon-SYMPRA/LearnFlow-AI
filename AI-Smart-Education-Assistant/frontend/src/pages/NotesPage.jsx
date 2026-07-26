@@ -40,7 +40,7 @@ export const NotesPage = () => {
   const [selectedType, setSelectedType] = useState("detailed");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedNote, setGeneratedNote] = useState("");
-  const [copyToClipboard, { success: isCopied }] = useCopyToClipboard();
+  const { copy, copied } = useCopyToClipboard();
 
   React.useEffect(() => {
     documentService.list().then(res => {
@@ -72,10 +72,9 @@ export const NotesPage = () => {
   };
 
   const handleCopy = () => {
-    if (generatedNote) {
-      copyToClipboard(generatedNote);
-      toast.success("Notes copied to clipboard");
-    }
+    if (!generatedNote) return;
+    copy(generatedNote);
+    toast.success("Notes copied to clipboard");
   };
 
   const handleDownload = () => {
@@ -208,7 +207,7 @@ export const NotesPage = () => {
                       onClick={handleCopy}
                       className="flex items-center gap-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
-                      {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                       Copy
                     </button>
                     <button 

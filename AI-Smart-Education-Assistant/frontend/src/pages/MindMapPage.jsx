@@ -51,7 +51,15 @@ export const MindMapPage = () => {
     
     try {
       const response = await aiService.generateMindMap(selectedDoc);
-      const data = response.data?.mindmap;
+      let data = response.data?.mindmap || response.data;
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data.replace(/```json/g, "").replace(/```/g, ""));
+        } catch (e) {
+          // Ignore parse error
+        }
+      }
+      
       if (data && data.nodes && data.edges) {
         setNodes(data.nodes);
         setEdges(data.edges);
