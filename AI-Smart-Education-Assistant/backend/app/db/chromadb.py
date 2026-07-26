@@ -9,7 +9,11 @@ class ChromaDatabase:
     def connect(cls):
         if not os.path.exists(settings.CHROMADB_PATH):
             os.makedirs(settings.CHROMADB_PATH)
-        cls.client = chromadb.PersistentClient(path=settings.CHROMADB_PATH)
+        from chromadb.config import Settings
+        cls.client = chromadb.PersistentClient(
+            path=settings.CHROMADB_PATH,
+            settings=Settings(anonymized_telemetry=False)
+        )
         print("Connected to ChromaDB")
 
     @classmethod

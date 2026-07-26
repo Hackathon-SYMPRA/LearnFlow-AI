@@ -130,7 +130,12 @@ async def generate_flashcards(
     current_user: UserInDB = Depends(get_current_user)
 ):
     query = request.topic_query if request.topic_query else "main concepts and definitions"
-    context_chunks = rag_service.similarity_search(query, current_user.id, top_k=15)
+    context_chunks = rag_service.similarity_search(
+        query, 
+        current_user.id, 
+        top_k=15, 
+        document_ids=[request.document_id] if request.document_id else None
+    )
     
     if not context_chunks:
         raise HTTPException(status_code=400, detail="No relevant study material found to generate flashcards.")
@@ -162,7 +167,7 @@ async def generate_notes(
         "main concepts and topics", 
         current_user.id, 
         top_k=15,
-        document_id=request.document_id
+        document_ids=[request.document_id] if request.document_id else None
     )
     
     if not context_chunks:
@@ -186,7 +191,7 @@ async def generate_mindmap(
         "main concepts and topics", 
         current_user.id, 
         top_k=15, 
-        document_id=request.document_id
+        document_ids=[request.document_id] if request.document_id else None
     )
     # Let's just use it as is, or we can fetch chunks directly from MongoDB if we had a method.
     
@@ -230,7 +235,7 @@ async def generate_mock_test_question(
     request: MockTestRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
-    context_chunks = rag_service.similarity_search("main concepts and topics", current_user.id, top_k=15, document_id=request.document_id)
+    context_chunks = rag_service.similarity_search("main concepts and topics", current_user.id, top_k=15, document_ids=[request.document_id] if request.document_id else None)
     if not context_chunks:
         raise HTTPException(status_code=400, detail="No relevant study material found for this document.")
         
@@ -244,7 +249,7 @@ async def evaluate_mock_test_answer(
     request: MockTestEvaluateRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
-    context_chunks = rag_service.similarity_search(request.user_answer, current_user.id, top_k=10, document_id=request.document_id)
+    context_chunks = rag_service.similarity_search(request.user_answer, current_user.id, top_k=10, document_ids=[request.document_id] if request.document_id else None)
     
     history_dicts = [msg.model_dump() for msg in request.chat_history] if request.chat_history else None
     

@@ -21,7 +21,7 @@ async def create_chat(
     obj_in: ChatCreateRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
-    chat_base = ChatBase(user_id=current_user.id, title=obj_in.title)
+    chat_base = ChatBase(user_id=current_user.id, title=obj_in.title, document_ids=obj_in.documentIds)
     obj = await chat_service.create(chat_base, current_user.id)
     return SuccessResponse(message="Chat created successfully", data=obj.model_dump())
 
@@ -79,7 +79,8 @@ async def send_message(
         raise HTTPException(status_code=404, detail="Chat not found")
     
     # Process message with AI
-    context_chunks = rag_service.similarity_search(request.message, current_user.id, top_k=5)
+    doc_ids = chat.document_ids if hasattr(chat, "document_ids") else None
+    context_chunks = rag_service.similarity_search(request.message, current_user.id, top_k=5, document_ids=doc_ids)
     history = chat.messages
     response_text = await ai_generator.generate_chat_response(
         query=request.message, 
@@ -108,7 +109,8 @@ async def send_message_stream(
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
     
-    context_chunks = rag_service.similarity_search(request.message, current_user.id, top_k=5)
+    doc_ids = chat.document_ids if hasattr(chat, "document_ids") else None
+    context_chunks = rag_service.similarity_search(request.message, current_user.id, top_k=5, document_ids=doc_ids)
     history = chat.messages
     
     # Save user message immediately

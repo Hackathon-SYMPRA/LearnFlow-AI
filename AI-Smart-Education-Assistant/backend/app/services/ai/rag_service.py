@@ -54,7 +54,7 @@ class RAGService:
             logger.error(f"Error storing in ChromaDB: {str(e)}")
             raise RuntimeError(f"Embedding generation or storage failed: {str(e)}")
 
-    def similarity_search(self, query: str, user_id: str, top_k: int = 5, document_id: Optional[str] = None) -> List[Dict]:
+    def similarity_search(self, query: str, user_id: str, top_k: int = 5, document_ids: Optional[List[str]] = None) -> List[Dict]:
         """
         Search for similar chunks in ChromaDB.
         Filters by user_id to ensure data isolation.
@@ -66,13 +66,21 @@ class RAGService:
             
             # Query chroma with metadata filter
             where_clause = {"user_id": user_id}
-            if document_id:
-                where_clause = {
-                    "$and": [
-                        {"user_id": user_id},
-                        {"document_id": document_id}
-                    ]
-                }
+            if document_ids:
+                if len(document_ids) == 1:
+                    where_clause = {
+                        "$and": [
+                            {"user_id": user_id},
+                            {"document_id": document_ids[0]}
+                        ]
+                    }
+                elif len(document_ids) > 1:
+                    where_clause = {
+                        "$and": [
+                            {"user_id": user_id},
+                            {"document_id": {"$in": document_ids}}
+                        ]
+                    }
                 
             results = collection.query(
                 query_embeddings=[query_embedding],

@@ -6,6 +6,7 @@ class ChatBase(BaseModel):
     user_id: str
     title: str
     messages: List[dict] = []
+    document_ids: List[str] = []
     total_questions: int = 0
     total_tokens: int = 0
 
