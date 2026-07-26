@@ -11,6 +11,13 @@ import { authService } from "@/services";
 
 const AuthContext = createContext(undefined);
 
+const normalizeUser = (u) => {
+  if (u && u.full_name && !u.name) {
+    u.name = u.full_name;
+  }
+  return u;
+};
+
 export const AuthProvider = ({ children }) => {
   const [state, setState] = useState({
     user: null,
@@ -24,7 +31,7 @@ export const AuthProvider = ({ children }) => {
       const token = storage.get(STORAGE_KEYS.TOKEN);
       const user = storage.get(STORAGE_KEYS.USER);
       if (token && user) {
-        setState({ user, token, isAuthenticated: true, isLoading: false });
+        setState({ user: normalizeUser(user), token, isAuthenticated: true, isLoading: false });
       } else {
         setState({
           user: null,
@@ -41,7 +48,7 @@ export const AuthProvider = ({ children }) => {
     setState((prev) => ({ ...prev, isLoading: true }));
     try {
       const response = await authService.login(email, password);
-      const user = response.data.user;
+      const user = normalizeUser(response.data.user);
       const token = response.data.tokens.access_token;
       storage.set(STORAGE_KEYS.TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);
@@ -56,7 +63,7 @@ export const AuthProvider = ({ children }) => {
     setState((prev) => ({ ...prev, isLoading: true }));
     try {
       const response = await authService.register(name, email, password);
-      const user = response.data.user;
+      const user = normalizeUser(response.data.user);
       const token = response.data.tokens.access_token;
       storage.set(STORAGE_KEYS.TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);
@@ -86,7 +93,8 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = useCallback(async () => {
     try {
-      const user = await authService.getCurrentUser();
+      let user = await authService.getCurrentUser();
+      user = normalizeUser(user);
       storage.set(STORAGE_KEYS.USER, user);
       setState((prev) => ({ ...prev, user }));
     } catch (error) {
