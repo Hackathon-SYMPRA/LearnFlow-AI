@@ -1,6 +1,16 @@
-import chromadb
-from app.core.config import settings
 import os
+import sys
+
+# Monkey patch posthog telemetry globally to prevent chromadb 0.5.0 crash
+class MockPosthog:
+    def __init__(self, *args, **kwargs): pass
+    def capture(self, *args, **kwargs): pass
+
+sys.modules['posthog'] = MockPosthog()
+
+import chromadb
+from chromadb.config import Settings
+from app.core.config import settings
 
 class ChromaDatabase:
     client = None
@@ -9,7 +19,7 @@ class ChromaDatabase:
     def connect(cls):
         if not os.path.exists(settings.CHROMADB_PATH):
             os.makedirs(settings.CHROMADB_PATH)
-        from chromadb.config import Settings
+            
         cls.client = chromadb.PersistentClient(
             path=settings.CHROMADB_PATH,
             settings=Settings(anonymized_telemetry=False)

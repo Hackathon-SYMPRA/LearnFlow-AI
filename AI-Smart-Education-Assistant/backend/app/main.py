@@ -1,3 +1,7 @@
+import os
+os.environ["CHROMA_TELEMETRY_ANONYMIZED"] = "False"
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+
 from fastapi import FastAPI
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded

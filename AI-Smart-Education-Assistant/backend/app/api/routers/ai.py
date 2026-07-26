@@ -51,6 +51,9 @@ class GenerateStudyPlanRequest(BaseModel):
     days: int
     hours_per_day: int
 
+import logging
+logger = logging.getLogger(__name__)
+
 def background_process_document(file_path: str, file_type: str, metadata: dict):
     try:
         # Extract Text
@@ -63,8 +66,10 @@ def background_process_document(file_path: str, file_type: str, metadata: dict):
         # Embed and Store
         rag_service.store_documents(chunks)
         
+        logger.info(f"Successfully processed document {metadata.get('document_id')}")
         # Update document status in DB could happen here (e.g., set status to "Processed")
     except Exception as e:
+        logger.error(f"Error in background_process_document: {str(e)}", exc_info=True)
         print(f"Error in background_process_document: {str(e)}")
 
 @router.post("/process-document", response_model=SuccessResponse)
