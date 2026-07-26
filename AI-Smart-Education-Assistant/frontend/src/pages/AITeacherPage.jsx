@@ -212,7 +212,7 @@ export const AITeacherPage = () => {
             >
               <option value="" disabled>Select Document</option>
               {documents.map(doc => (
-                <option key={doc.id} value={doc.id}>{doc.file_name}</option>
+                <option key={doc.id} value={doc.id}>{doc.original_name || doc.file_name}</option>
               ))}
             </select>
           </div>

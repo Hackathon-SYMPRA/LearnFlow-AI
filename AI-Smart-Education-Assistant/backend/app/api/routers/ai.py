@@ -212,7 +212,8 @@ async def chat_teacher(
     history_dicts = [msg.model_dump() for msg in request.chat_history] if request.chat_history else None
     
     response_text = await ai_generator.generate_teacher_response(request.query, context_chunks, request.mode, history_dicts)
-    
+    return SuccessResponse(message="Teacher response generated successfully", data={"response": response_text})
+
 class MockTestRequest(BaseModel):
     document_id: str
     language: str = "English"
