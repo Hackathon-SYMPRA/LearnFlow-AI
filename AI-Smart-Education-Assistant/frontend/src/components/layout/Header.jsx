@@ -14,6 +14,9 @@ import {
   Settings as SettingsIcon,
   LogOut,
   BookOpen,
+  Volume2,
+  VolumeX,
+  Flame,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +45,7 @@ export const Header = ({ onToggleSidebar }) => {
   const [subjectOpen, setSubjectOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasNewUnread, setHasNewUnread] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const notifTriggerRef = useRef(null);
   const profileRef = useRef(null);
@@ -114,7 +118,7 @@ export const Header = ({ onToggleSidebar }) => {
 
   return (
     <header
-      className="sticky top-0 z-30 h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80"
+      className="sticky top-0 z-30 h-16 border-b border-white/20 bg-white/60 backdrop-blur-xl dark:border-white/10 dark:bg-surface-glass/80"
       role="banner"
     >
       <div className="flex h-full items-center gap-4 px-4 sm:px-6">
@@ -142,7 +146,7 @@ export const Header = ({ onToggleSidebar }) => {
           type="button"
           onClick={openGlobalSearch}
           className={cn(
-            "hidden md:flex flex-1 max-w-2xl mx-auto items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-left text-sm text-slate-500 transition-colors hover:border-primary-300 hover:bg-white dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-primary-700 dark:hover:bg-slate-800",
+            "hidden md:flex flex-1 max-w-xl mx-auto items-center gap-3 rounded-full border border-slate-200/50 bg-white/50 px-4 py-2 text-left text-sm text-slate-500 transition-all hover:border-electric-300 hover:bg-white hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] dark:border-white/10 dark:bg-black/20 dark:text-slate-400 dark:hover:border-electric-500/50 dark:hover:bg-white/5",
           )}
           aria-label="Open search (⌘K)"
         >
@@ -153,7 +157,7 @@ export const Header = ({ onToggleSidebar }) => {
           <span className="flex-1 truncate">
             Search documents, chats, notes...
           </span>
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-full border border-slate-300/50 bg-slate-100/50 px-2 py-0.5 font-mono text-[10px] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
             <span className="text-[9px]">⌘</span>K
           </kbd>
         </button>
@@ -238,7 +242,12 @@ export const Header = ({ onToggleSidebar }) => {
         </div>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <div className="flex items-center gap-1">
+          
+          {/* Flame Streak Counter */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-flame-500/10 border border-flame-500/20 text-flame-600 dark:text-flame-400 font-semibold text-sm mr-2 shadow-[inset_0_0_10px_rgba(245,158,11,0.1)]">
+            <Flame className="w-4 h-4 animate-flame-flicker" />
+            <span>7 Day Streak</span>
+          </div>
             <span
               className={cn(
                 "hidden sm:inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
@@ -293,7 +302,19 @@ export const Header = ({ onToggleSidebar }) => {
               <Sparkles className="h-3 w-3" aria-hidden="true" />
               <span className="hidden xl:inline">AI Ready</span>
             </span>
-          </div>
+
+          <button
+            type="button"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="btn-ghost h-10 w-10 text-slate-500 hover:text-electric-500 dark:text-slate-400 dark:hover:text-electric-400 transition-colors"
+            aria-label={soundEnabled ? "Mute sounds" : "Enable sounds"}
+          >
+            {soundEnabled ? (
+              <Volume2 className="h-5 w-5" />
+            ) : (
+              <VolumeX className="h-5 w-5 opacity-50" />
+            )}
+          </button>
 
           <button
             type="button"

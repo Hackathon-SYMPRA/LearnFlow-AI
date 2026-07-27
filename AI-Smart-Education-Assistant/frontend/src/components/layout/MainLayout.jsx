@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
+import DashboardBackground from "./DashboardBackground";
+import FloatingAICompanion from "./FloatingAICompanion";
 import { cn } from "@/utils/format";
 
 export const MainLayout = () => {
@@ -22,9 +24,12 @@ export const MainLayout = () => {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen font-sans text-slate-900 dark:text-slate-100 relative selection:bg-electric-500/30">
+      <DashboardBackground />
+      <FloatingAICompanion />
+      
       {isOffline && (
-        <div className="fixed top-0 left-0 right-0 z-[100] bg-red-500 text-white text-xs font-semibold px-4 py-1.5 text-center flex items-center justify-center gap-2 shadow-sm">
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-flame-500 text-white text-xs font-semibold px-4 py-1.5 text-center flex items-center justify-center gap-2 shadow-sm">
           You are currently offline. Some features may be limited.
         </div>
       )}
@@ -33,16 +38,16 @@ export const MainLayout = () => {
         onClose={() => setMobileSidebarOpen(false)}
       />
 
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-screen flex-1 flex-col z-10">
         <Header onToggleSidebar={() => setMobileSidebarOpen(true)} />
 
         <main className="flex-1" id="main-content" role="main" tabIndex={-1}>
           <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className={cn("animate-fade-in")}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className={cn("animate-fade-in relative")}
             >
               <Outlet />
             </motion.div>

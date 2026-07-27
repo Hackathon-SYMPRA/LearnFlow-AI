@@ -56,7 +56,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const sidebarContent = (
     <aside
       className={cn(
-        "flex h-full flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-all duration-300",
+        "flex h-full flex-col border-r border-white/20 bg-white/60 dark:border-white/10 dark:bg-surface-glass backdrop-blur-2xl transition-all duration-300 shadow-xl",
         collapsed ? "w-20" : "w-72",
       )}
       aria-label="Sidebar navigation"
@@ -68,16 +68,17 @@ export const Sidebar = ({ isOpen, onClose }) => {
             collapsed && "justify-center w-full",
           )}
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/20">
-            <Sparkles className="h-5 w-5" aria-hidden="true" />
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-electric-500 to-electric-600 text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]">
+            <Sparkles className="h-5 w-5 animate-pulse" aria-hidden="true" />
+            <div className="absolute inset-0 rounded-xl bg-white/20 mix-blend-overlay animate-shimmer" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-base font-bold text-slate-900 dark:text-slate-100">
-                EduMind AI
+              <p className="truncate text-base font-bold text-slate-900 dark:text-white tracking-wide">
+                LearnFlow<span className="text-electric-400">.ai</span>
               </p>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                Smart Learning
+              <p className="truncate text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+                Premium Edition
               </p>
             </div>
           )}
@@ -113,11 +114,11 @@ export const Sidebar = ({ isOpen, onClose }) => {
                   onClick={isMobile ? onClose : undefined}
                   className={({ isActive }) =>
                     cn(
-                      "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 relative overflow-hidden",
                       collapsed && "justify-center px-0",
                       isActive
-                        ? "bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-400"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                        ? "bg-electric-500/10 text-electric-600 dark:bg-electric-500/20 dark:text-electric-400 shadow-[inset_4px_0_0_rgba(139,92,246,1)]"
+                        : "text-slate-600 hover:bg-slate-100/50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white",
                     )
                   }
                 >
@@ -126,7 +127,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                       <Icon
                         className={cn(
                           "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110",
-                          isActive && "text-primary-600 dark:text-primary-400",
+                          isActive && "text-electric-600 dark:text-electric-400 group-hover:animate-pulse-glow",
                         )}
                         aria-hidden="true"
                       />
@@ -149,19 +150,40 @@ export const Sidebar = ({ isOpen, onClose }) => {
         </ul>
       </nav>
 
-      <div className="border-t border-slate-200 dark:border-slate-800 p-3">
+      <div className="border-t border-slate-200/50 dark:border-white/10 p-4">
         {!collapsed && user ? (
-          <div className="mb-3 flex items-center gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 text-sm font-semibold text-white">
-              {user.name.charAt(0).toUpperCase()}
+          <div className="mb-4 rounded-xl bg-white/50 dark:bg-surface/50 border border-slate-200/50 dark:border-white/5 p-3 backdrop-blur-md shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="relative">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-electric-500 to-cyber-500 text-sm font-bold text-white shadow-md">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-surface" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                  {user.name}
+                </p>
+                <p className="truncate text-[10px] text-electric-500 font-semibold uppercase tracking-wider">
+                  Level 12 Scholar
+                </p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
-                {user.name}
-              </p>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              </p>
+            
+            {/* XP Progress Bar */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-[10px] font-mono font-medium text-slate-500 dark:text-slate-400">
+                <span>2,450 XP</span>
+                <span>3,000 XP</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: "81%" }}
+                  transition={{ duration: 1, delay: 0.5 }}
+                  className="h-full bg-gradient-to-r from-electric-500 to-cyber-400 rounded-full"
+                />
+              </div>
             </div>
           </div>
         ) : null}

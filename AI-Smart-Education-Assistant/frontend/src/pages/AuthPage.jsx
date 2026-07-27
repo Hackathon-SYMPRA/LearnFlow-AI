@@ -1,91 +1,87 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, Suspense, lazy, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import confetti from "canvas-confetti";
 import {
   Sparkles,
-  LogIn,
-  UserPlus,
   Mail,
   Lock,
   UserCircle,
   Eye,
   EyeOff,
   ArrowRight,
-  BookOpen,
-  BrainCircuit,
-  Layers,
-  UploadCloud,
   CheckCircle2,
-  WifiOff,
+  AlertTriangle,
+  Volume2,
+  VolumeX,
+  Moon,
+  Sun,
+  Loader2
 } from "lucide-react";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { loginSchema, registerSchema } from "@/utils/validation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Form";
-import { toast } from "@/components/ui/Toast";
 import { ROUTES } from "@/constants";
 import { cn } from "@/utils/format";
 
-const DEMO_EMAIL = "demo@edumind.ai";
-const DEMO_PASSWORD = "DemoPass123";
+// Import ultra-premium components
+import AuthBackground from "@/components/auth/AuthBackground";
+const AICharacter3D = lazy(() => import("@/components/auth/AICharacter3D"));
 
-const features = [
-  {
-    icon: UploadCloud,
-    title: "Upload Materials",
-    desc: "PDFs, notes, docs, images",
-  },
-  {
-    icon: BrainCircuit,
-    title: "AI Tutor",
-    desc: "Answers grounded in your sources",
-  },
-  {
-    icon: Layers,
-    title: "Flashcards & Quizzes",
-    desc: "Active recall, spaced repetition",
-  },
-  { icon: BookOpen, title: "Smart Planner", desc: "AI-built study schedules" },
-];
+// Custom Web Audio API Sound Generator
+const playSound = (type) => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
 
-const SSOButton = ({ provider, icon }) => {
-  return (
-    <div className="relative group">
-      <Button
-        type="button"
-        variant="outline"
-        fullWidth
-        disabled
-        className="opacity-75 cursor-not-allowed"
-        leftIcon={icon}
-      >
-        Continue with {provider}
-      </Button>
-      <span className="absolute -top-2 -right-2 inline-flex items-center rounded-full bg-secondary-100 dark:bg-secondary-900/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-700 dark:text-secondary-300 border border-secondary-200 dark:border-secondary-800 shadow-sm">
-        Coming soon
-      </span>
-    </div>
-  );
+    if (type === 'click') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } else if (type === 'success') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      osc.frequency.setValueAtTime(600, ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(800, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.1);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    } else if (type === 'error') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    }
+  } catch (e) {
+    console.error("Audio Context not supported or failed", e);
+  }
 };
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-    <path
-      fill="#EA4335"
-      d="M12 10.2v3.9h5.5c-.24 1.4-1.68 4.1-5.5 4.1-3.3 0-6-2.75-6-6.2s2.7-6.2 6-6.2c1.88 0 3.14.8 3.86 1.49l2.63-2.54C16.88 3.2 14.64 2.2 12 2.2 6.48 2.2 2 6.69 2 12.2s4.48 10 10 10c5.78 0 9.6-4.06 9.6-9.78 0-.66-.07-1.16-.16-1.66L12 10.2z"
-    />
+    <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.68 4.1-5.5 4.1-3.3 0-6-2.75-6-6.2s2.7-6.2 6-6.2c1.88 0 3.14.8 3.86 1.49l2.63-2.54C16.88 3.2 14.64 2.2 12 2.2 6.48 2.2 2 6.69 2 12.2s4.48 10 10 10c5.78 0 9.6-4.06 9.6-9.78 0-.66-.07-1.16-.16-1.66L12 10.2z" />
   </svg>
 );
 
 const GitHubIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-4 w-4"
-    aria-hidden="true"
-    fill="currentColor"
-  >
+  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true" fill="currentColor">
     <path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49v-1.72c-2.78.62-3.37-1.36-3.37-1.36-.46-1.19-1.11-1.51-1.11-1.51-.91-.63.07-.62.07-.62 1 .07 1.53 1.05 1.53 1.05.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.74-.1-.26-.45-1.29.1-2.7 0 0 .84-.27 2.75 1.05A9.3 9.3 0 0 1 12 6.84c.85.01 1.71.12 2.51.35 1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.44.1 2.7.64.71 1.03 1.62 1.03 2.74 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9v2.82c0 .27.18.6.69.49A10.02 10.02 0 0 0 22 12.25C22 6.58 17.52 2 12 2z" />
   </svg>
 );
@@ -94,19 +90,77 @@ export const AuthPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { login, register, isAuthenticated, isLoading } = useAuth();
+  
   const [mode, setMode] = useState("login");
   const [showLoginPw, setShowLoginPw] = useState(false);
   const [showRegPw, setShowRegPw] = useState(false);
-  const [showRegConfirmPw, setShowRegConfirmPw] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [agreeTerms, setAgreeTerms] = useState(false);
+  
   const [networkError, setNetworkError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+
+  // Settings
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [theme, setTheme] = useState("dark"); // Dark by default as per prompt
+
+  // Orb State and Tracking
+  const [orbState, setOrbState] = useState("idle");
+  const [speechMsg, setSpeechMsg] = useState("");
+  const [mousePos, setMousePos] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  const [cardShake, setCardShake] = useState(false);
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // 3D Card Hover Effect
+  const cardX = useMotionValue(0);
+  const cardY = useMotionValue(0);
+  const cardRotateX = useTransform(cardY, [-300, 300], [10, -10]);
+  const cardRotateY = useTransform(cardX, [-300, 300], [-10, 10]);
+
+  // Typewriter text
+  const features = ["AI Friend", "Voice Viva", "PDF Summarizer", "Quiz Generator", "Flashcards", "Study Planner"];
+  const [featureIndex, setFeatureIndex] = useState(0);
 
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      navigate(ROUTES.dashboard, { replace: true });
+    // Initial greeting
+    const hour = new Date().getHours();
+    let greeting = "Good evening";
+    if (hour < 12) greeting = "Good morning";
+    else if (hour < 18) greeting = "Good afternoon";
+    
+    setSpeechMsg(`${greeting}! Welcome back. Ready to learn?`);
+    setTimeout(() => {
+      if (orbState === "idle") setSpeechMsg("");
+    }, 5000);
+
+    const featureInterval = setInterval(() => {
+      setFeatureIndex((prev) => (prev + 1) % features.length);
+    }, 2500);
+
+    return () => clearInterval(featureInterval);
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+    // Update card tilt relative to center of screen
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    cardX.set(e.clientX - centerX);
+    cardY.set(e.clientY - centerY);
+  }, [cardX, cardY]);
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [handleMouseMove]);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [theme]);
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
@@ -118,531 +172,368 @@ export const AuthPage = () => {
     defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
-  const fillDemo = () => {
-    if (mode === "login") {
-      loginForm.setValue("email", DEMO_EMAIL, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      loginForm.setValue("password", DEMO_PASSWORD, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      toast.info("Demo credentials filled", {
-        description: "Click Sign In to explore.",
-      });
+  const handleFocus = useCallback((fieldName) => {
+    if (fieldName === "password" || fieldName === "confirmPassword") {
+      if ((fieldName === "password" && !showLoginPw) || (fieldName === "confirmPassword" && !showRegPw)) {
+        setOrbState("eyes_closed");
+        setSpeechMsg("I won't look!");
+      } else {
+        setOrbState("idle");
+        setSpeechMsg("");
+      }
     } else {
-      registerForm.setValue("name", "Demo Student", {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      registerForm.setValue("email", DEMO_EMAIL, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      registerForm.setValue("password", DEMO_PASSWORD, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      registerForm.setValue("confirmPassword", DEMO_PASSWORD, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      toast.info("Demo credentials filled", {
-        description: "Click Create Account to explore.",
-      });
+      setOrbState("idle");
+      setSpeechMsg(`Entering ${fieldName}...`);
     }
+  }, [showLoginPw, showRegPw]);
+
+  const handleBlur = useCallback(() => {
+    if (orbState !== "success" && orbState !== "error") {
+      setOrbState("idle");
+      setSpeechMsg("");
+    }
+  }, [orbState]);
+
+  const triggerError = (msg) => {
+    setOrbState("error");
+    setSpeechMsg("Oh no! " + msg);
+    setNetworkError(msg);
+    setCardShake(true);
+    if (soundEnabled) playSound("error");
+    setTimeout(() => setCardShake(false), 500);
+    setTimeout(() => {
+      setOrbState("idle");
+      setSpeechMsg("");
+    }, 4000);
+  };
+
+  const triggerSuccess = (msg) => {
+    setOrbState("success");
+    setSpeechMsg(msg);
+    setSuccessMessage(msg);
+    setSubmitSuccess(true);
+    if (soundEnabled) playSound("success");
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#6366F1', '#06B6D4', '#8B5CF6', '#10B981']
+    });
   };
 
   const onLogin = async (data) => {
+    setIsSubmittingForm(true);
     setNetworkError(null);
+    setSuccessMessage(null);
+    
     try {
       await login(data.email, data.password);
-      toast.success("Welcome back!", {
-        description: "You have signed in successfully.",
-      });
-      const redirect = location.state?.from?.pathname ?? ROUTES.dashboard;
-      navigate(redirect, { replace: true });
+      triggerSuccess("Welcome back to LearnFlow!");
+      setTimeout(() => navigate(ROUTES.dashboard, { replace: true }), 2000);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Login failed";
-      const isNetwork =
-        error instanceof TypeError ||
-        (error instanceof Error &&
-          (error.message.toLowerCase().includes("network") ||
-            error.message.toLowerCase().includes("fetch") ||
-            error.message.toLowerCase().includes("timeout")));
-      if (isNetwork) {
-        setNetworkError(
-          "We couldn\u2019t reach our servers. Please check your internet connection and try again.",
-        );
-      }
-      toast.error(message, {
-        description: isNetwork
-          ? "Check your connection and try again."
-          : "Please check your credentials and try again.",
-      });
+      triggerError(error.response?.data?.detail || error.message || "Invalid credentials. Please try again.");
+    } finally {
+      setIsSubmittingForm(false);
     }
   };
 
   const onRegister = async (data) => {
+    setIsSubmittingForm(true);
     setNetworkError(null);
+    setSuccessMessage(null);
+    
     try {
       await register(data.name, data.email, data.password);
-      toast.success("Account created!", {
-        description: "Welcome to EduMind AI.",
-      });
-      navigate(ROUTES.dashboard, { replace: true });
+      triggerSuccess("Account created successfully!");
+      setTimeout(() => navigate(ROUTES.dashboard, { replace: true }), 2000);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Registration failed";
-      const isNetwork =
-        error instanceof TypeError ||
-        (error instanceof Error &&
-          (error.message.toLowerCase().includes("network") ||
-            error.message.toLowerCase().includes("fetch") ||
-            error.message.toLowerCase().includes("timeout")));
-      if (isNetwork) {
-        setNetworkError(
-          "We couldn\u2019t reach our servers. Please check your internet connection and try again.",
-        );
-      }
-
-      // Try to extract the validation error message from the nested details if it exists
-      let desc = isNetwork ? "Check your connection and try again." : "Please try again.";
-      if (error?.details?.errors?.[0]?.msg) {
-        desc = error.details.errors[0].msg;
-      } else if (error?.details?.errors?.[0]?.ctx?.error) {
-        desc = error.details.errors[0].ctx.error;
-      } else if (!isNetwork && message !== "Registration failed" && message !== "Invalid request parameters") {
-        desc = message;
-      } else if (message === "Invalid request parameters") {
-        desc = "Please ensure your password is at least 8 characters with numbers and symbols.";
-      }
-
-      toast.error(message, {
-        description: desc,
-      });
+      triggerError(error.response?.data?.detail || error.message || "Registration failed. Please try again.");
+    } finally {
+      setIsSubmittingForm(false);
     }
   };
 
+  const toggleMode = (m) => {
+    if (soundEnabled) playSound("click");
+    setMode(m);
+    setNetworkError(null);
+  };
+
+  const cardVariants = {
+    shake: { x: [-10, 10, -10, 10, -5, 5, 0], transition: { duration: 0.4 } }
+  };
+
   return (
-    <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 flex">
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-600 text-white p-12 flex-col">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shadow-lg">
-            <Sparkles className="h-6 w-6" aria-hidden="true" />
-          </div>
-          <div>
-            <p className="text-xl font-bold">EduMind AI</p>
-            <p className="text-xs text-white/80">Smart Education Assistant</p>
-          </div>
-        </div>
+    <div className={`min-h-screen w-full relative flex items-center justify-center overflow-hidden font-sans transition-colors duration-500 ${theme === 'dark' ? 'bg-[#020617] text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+      
+      {theme === 'dark' && <AuthBackground mousePos={mousePos} />}
 
-        <div className="mt-auto space-y-8 max-w-lg">
-          <h1 className="text-4xl font-bold leading-tight text-balance">
-            Learn smarter with AI that reads alongside you
-          </h1>
-          <p className="text-lg text-white/80">
-            Upload any study material, ask questions, generate quizzes,
-            flashcards, and personalized study plans — all grounded in your
-            content.
-          </p>
-
-          <div className="grid grid-cols-2 gap-4">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className="rounded-2xl bg-white/10 border border-white/20 backdrop-blur-sm p-4"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 mb-3">
-                  <f.icon className="h-5 w-5" aria-hidden="true" />
-                </div>
-                <p className="font-semibold">{f.title}</p>
-                <p className="text-xs text-white/70 mt-0.5">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="mt-10 text-sm text-white/70">
-          © {new Date().getFullYear()} EduMind AI · Built for curious learners.
-        </p>
-
-        <div
-          className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/10 blur-3xl"
-          aria-hidden="true"
-        />
-
-        <div
-          className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-secondary-500/30 blur-3xl"
-          aria-hidden="true"
-        />
+      {/* Top right controls */}
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-3">
+        <button 
+          onClick={() => { setSoundEnabled(!soundEnabled); if(!soundEnabled) playSound('click'); }}
+          className={`p-2 rounded-full backdrop-blur-md transition-colors ${theme === 'dark' ? 'bg-slate-800/50 hover:bg-slate-700/50 text-slate-300' : 'bg-white/80 hover:bg-slate-200 text-slate-700 shadow-sm'}`}
+          title="Toggle Sound"
+        >
+          {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+        </button>
+        <button 
+          onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark'); if(soundEnabled) playSound('click'); }}
+          className={`p-2 rounded-full backdrop-blur-md transition-colors ${theme === 'dark' ? 'bg-slate-800/50 hover:bg-slate-700/50 text-slate-300' : 'bg-white/80 hover:bg-slate-200 text-slate-700 shadow-sm'}`}
+          title="Toggle Theme"
+        >
+          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <motion.div
-          key={mode}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.2 }}
-          className="w-full max-w-md"
-        >
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg">
-              <Sparkles className="h-6 w-6" aria-hidden="true" />
+      <div className="container mx-auto px-4 lg:px-8 h-full min-h-screen flex flex-col lg:flex-row relative z-10 pt-16 lg:pt-0">
+        
+        {/* Left Panel: Branding & Greetings */}
+        <div className="flex-1 flex flex-col justify-center items-start p-4 lg:p-16 lg:max-w-2xl relative">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
+            className="flex items-center gap-3 mb-12"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 shadow-lg shadow-primary-500/30">
+              <Sparkles className="h-6 w-6 text-white" aria-hidden="true" />
             </div>
-            <div>
-              <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                EduMind AI
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Smart Education Assistant
-              </p>
+            <span className="text-2xl font-bold font-heading tracking-tight">LearnFlow</span>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
+            <h1 className="text-5xl lg:text-7xl font-bold font-heading leading-[1.1] tracking-tight mb-6">
+              Learn Smarter <br/> with <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-accent-500 italic">AI</span>
+            </h1>
+            
+            <div className="text-xl lg:text-2xl font-medium mb-8 h-10 flex items-center gap-2">
+              <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>Your intelligent</span>
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={featureIndex}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -20, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-secondary-500 font-semibold"
+                >
+                  {features[featureIndex]}
+                </motion.span>
+              </AnimatePresence>
             </div>
-          </div>
 
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-              {mode === "login" ? "Welcome back" : "Create your account"}
-            </h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              {mode === "login"
-                ? "Sign in to continue your learning journey"
-                : "Start studying smarter in less than a minute"}
-            </p>
-          </div>
+            {/* Feature Pills */}
+            <div className="flex flex-wrap gap-2 mb-12">
+              {['Interactive', 'Personalized', '24/7 Access', 'Smart Analytics'].map((pill, i) => (
+                <span key={i} className={`px-3 py-1 text-xs font-medium rounded-full border ${theme === 'dark' ? 'border-slate-700/50 bg-slate-800/30 text-slate-300' : 'border-slate-200 bg-white text-slate-600 shadow-sm'}`}>
+                  {pill}
+                </span>
+              ))}
+            </div>
 
-          {networkError && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-5 rounded-xl border border-danger-200 dark:border-danger-900 bg-danger-50 dark:bg-danger-950/40 p-4 flex items-start gap-3"
-              role="alert"
-            >
-              <WifiOff
-                className="h-5 w-5 text-danger-600 dark:text-danger-400 shrink-0 mt-0.5"
-                aria-hidden="true"
+            {/* Quote Strip */}
+            <div className={`p-4 rounded-xl border-l-4 border-primary-500 max-w-md ${theme === 'dark' ? 'bg-slate-900/40 backdrop-blur-md' : 'bg-white shadow-md'}`}>
+              <p className={`text-sm italic mb-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                "LearnFlow completely transformed how I study. The AI feels like a real tutor."
+              </p>
+              <p className="text-xs font-semibold text-primary-500">— Sarah J., Medical Student</p>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Right Panel: Interactive 3D Orb & Form */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4 lg:p-8 relative w-full max-w-xl mx-auto lg:max-w-none lg:mx-0" style={{ perspective: 1200 }}>
+          
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1, delay: 0.4 }}
+            className="w-full absolute top-[-50px] lg:top-[5%] h-[300px] lg:h-[400px] -z-10"
+          >
+            <Suspense fallback={<div className="w-full h-full flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary-500 animate-spin" /></div>}>
+              <AICharacter3D state={orbState} mousePos={mousePos} speechMessage={speechMsg} />
+            </Suspense>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }} 
+            animate={cardShake ? "shake" : { opacity: 1, y: 0 }} 
+            transition={{ duration: 0.8, delay: 0.6 }}
+            variants={cardVariants}
+            style={{ rotateX: cardRotateX, rotateY: cardRotateY }}
+            className={`w-full max-w-md p-8 rounded-[30px] relative overflow-hidden group mt-[200px] lg:mt-24 transition-colors duration-500 ${
+              theme === 'dark' 
+              ? 'bg-[rgba(15,23,42,0.55)] backdrop-blur-[22px] border border-slate-700/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]' 
+              : 'bg-white/80 backdrop-blur-[22px] border border-slate-200 shadow-2xl'
+            }`}
+          >
+            {/* Animated conic-gradient rotating border (only visible in dark mode for premium feel) */}
+            {theme === 'dark' && (
+              <div className="absolute inset-[-1px] rounded-[30px] -z-10 bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#6366F1_100%)] animate-[spin_4s_linear_infinite] opacity-50 mask-image-border" style={{ WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)", WebkitMaskComposite: "xor", padding: "1px" }} />
+            )}
+
+            {/* Error / Success Banners */}
+            <AnimatePresence>
+              {networkError && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6 rounded-xl border border-danger-500/30 bg-danger-500/10 p-4 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-danger-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-danger-200">{networkError}</p>
+                </motion.div>
+              )}
+              {successMessage && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6 rounded-xl border border-success-500/30 bg-success-500/10 p-4 flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-success-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-success-200">{successMessage}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className={`flex rounded-xl p-1 mb-8 relative ${theme === 'dark' ? 'border border-slate-700/50 bg-slate-950/50' : 'bg-slate-100'}`}>
+              <motion.div 
+                className={`absolute inset-y-1 left-1 rounded-lg shadow-sm w-[calc(50%-4px)] ${theme === 'dark' ? 'bg-slate-800 border border-slate-700' : 'bg-white'}`}
+                animate={{ x: mode === "login" ? 0 : "100%" }}
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
-              <div className="text-sm">
-                <p className="font-medium text-danger-800 dark:text-danger-200">
-                  Connection error
-                </p>
-                <p className="mt-0.5 text-danger-700 dark:text-danger-300">
-                  {networkError}
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          <div className="card p-6 sm:p-8">
-            <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 p-1 bg-slate-100 dark:bg-slate-800 mb-6">
-              {[
-                { key: "login", label: "Sign In", icon: LogIn },
-                { key: "register", label: "Sign Up", icon: UserPlus },
-              ].map((t) => (
+              {["login", "register"].map((t) => (
                 <button
-                  key={t.key}
+                  key={t}
                   type="button"
-                  onClick={() => {
-                    setMode(t.key);
-                    setNetworkError(null);
-                  }}
-                  aria-pressed={mode === t.key}
+                  onClick={() => toggleMode(t)}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
-                    mode === t.key
-                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100",
+                    "flex-1 px-3 py-2 text-sm font-medium rounded-lg relative z-10 transition-colors duration-300",
+                    mode === t 
+                      ? (theme === 'dark' ? "text-white" : "text-slate-900") 
+                      : (theme === 'dark' ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-700")
                   )}
                 >
-                  <t.icon className="h-4 w-4" aria-hidden="true" />
-                  {t.label}
+                  {t === "login" ? "Login" : "Create Account"}
                 </button>
               ))}
             </div>
 
-            {mode === "login" ? (
-              <form
-                onSubmit={loginForm.handleSubmit(onLogin)}
-                className="space-y-4"
-                noValidate
-              >
-                <Input
-                  label="Email"
-                  id="login-email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  leftIcon={<Mail className="h-4 w-4" aria-hidden="true" />}
-                  error={loginForm.formState.errors.email?.message}
-                  {...loginForm.register("email")}
-                />
-
-                <div className="relative">
+            <AnimatePresence mode="wait">
+              {mode === "login" ? (
+                <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-5 relative z-10">
                   <Input
-                    label="Password"
-                    id="login-password"
-                    type={showLoginPw ? "text" : "password"}
-                    autoComplete="current-password"
-                    placeholder="••••••••"
-                    leftIcon={<Lock className="h-4 w-4" aria-hidden="true" />}
-                    rightIcon={
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        onClick={() => setShowLoginPw((s) => !s)}
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
-                        aria-label={
-                          showLoginPw ? "Hide password" : "Show password"
-                        }
-                      >
-                        {showLoginPw ? (
-                          <EyeOff className="h-4 w-4" aria-hidden="true" />
-                        ) : (
-                          <Eye className="h-4 w-4" aria-hidden="true" />
-                        )}
-                      </button>
-                    }
-                    error={loginForm.formState.errors.password?.message}
-                    {...loginForm.register("password")}
+                    label="Email" type="email" placeholder="you@example.com"
+                    leftIcon={<Mail className="h-4 w-4 text-slate-400" />}
+                    error={loginForm.formState.errors.email?.message}
+                    onFocus={() => handleFocus("email")} onBlur={handleBlur}
+                    {...loginForm.register("email")}
+                    className={theme === 'dark' ? "bg-slate-950/50 border-slate-700 text-white placeholder:text-slate-500" : "bg-white"}
                   />
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-slate-600 dark:text-slate-400">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
+                  
+                  <div className="relative">
+                    <Input
+                      label="Password" type={showLoginPw ? "text" : "password"} placeholder="••••••••"
+                      leftIcon={<Lock className="h-4 w-4 text-slate-400" />}
+                      rightIcon={
+                        <button type="button" onClick={() => {setShowLoginPw(!showLoginPw); if(soundEnabled) playSound('click');}} className="text-slate-400 hover:text-primary-500">
+                          {showLoginPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      }
+                      error={loginForm.formState.errors.password?.message}
+                      onFocus={() => handleFocus("password")} onBlur={handleBlur}
+                      {...loginForm.register("password")}
+                      className={theme === 'dark' ? "bg-slate-950/50 border-slate-700 text-white placeholder:text-slate-500" : "bg-white"}
                     />
-                    Remember me
-                  </label>
-                  <Link
-                    to="/forgot-password"
-                    className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline underline-offset-2"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  loading={loginForm.formState.isSubmitting || isLoading}
-                  rightIcon={
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  }
-                >
-                  {loginForm.formState.isSubmitting || isLoading
-                    ? "Signing in..."
-                    : "Sign In"}
-                </Button>
-              </form>
-            ) : (
-              <form
-                onSubmit={registerForm.handleSubmit(onRegister)}
-                className="space-y-4"
-                noValidate
-              >
-                <Input
-                  label="Full Name"
-                  id="register-name"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="Alex Student"
-                  leftIcon={
-                    <UserCircle className="h-4 w-4" aria-hidden="true" />
-                  }
-                  error={registerForm.formState.errors.name?.message}
-                  {...registerForm.register("name")}
-                />
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-xs mt-2">
+                    <label className="flex items-center gap-2 text-slate-400 cursor-pointer transition-colors hover:text-primary-400">
+                      <input
+                        type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-primary-500 focus:ring-primary-500"
+                      />
+                      Remember me
+                    </label>
+                    <Link to="/forgot-password" className="text-primary-500 hover:text-primary-400 font-medium transition-colors">
+                      Forgot password?
+                    </Link>
+                  </div>
 
-                <Input
-                  label="Email"
-                  id="register-email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  leftIcon={<Mail className="h-4 w-4" aria-hidden="true" />}
-                  error={registerForm.formState.errors.email?.message}
-                  {...registerForm.register("email")}
-                />
-
-                <div className="relative">
-                  <Input
-                    label="Password"
-                    id="register-password"
-                    type={showRegPw ? "text" : "password"}
-                    autoComplete="new-password"
-                    placeholder="8+ characters, mix of cases and numbers"
-                    leftIcon={<Lock className="h-4 w-4" aria-hidden="true" />}
-                    rightIcon={
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        onClick={() => setShowRegPw((s) => !s)}
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
-                        aria-label={
-                          showRegPw ? "Hide password" : "Show password"
-                        }
-                      >
-                        {showRegPw ? (
-                          <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="submit" fullWidth disabled={isSubmittingForm || submitSuccess}
+                      className="mt-4 bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-500 hover:to-accent-500 text-white border-0 shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] transition-all h-12 rounded-xl text-base font-semibold overflow-hidden"
+                    >
+                      <AnimatePresence mode="wait">
+                        {isSubmittingForm ? (
+                          <motion.div key="spin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Processing...</motion.div>
+                        ) : submitSuccess ? (
+                          <motion.div key="check" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> Success!</motion.div>
                         ) : (
-                          <Eye className="h-4 w-4" aria-hidden="true" />
+                          <motion.div key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">Sign In <ArrowRight className="h-4 w-4" /></motion.div>
                         )}
+                      </AnimatePresence>
+                    </Button>
+                  </motion.div>
+                </motion.form>
+              ) : (
+                <motion.form key="register" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4 relative z-10">
+                  <Input
+                    label="Full Name" placeholder="Alex Student"
+                    leftIcon={<UserCircle className="h-4 w-4 text-slate-400" />}
+                    error={registerForm.formState.errors.name?.message}
+                    onFocus={() => handleFocus("name")} onBlur={handleBlur}
+                    {...registerForm.register("name")}
+                    className={theme === 'dark' ? "bg-slate-950/50 border-slate-700 text-white placeholder:text-slate-500" : "bg-white"}
+                  />
+                  <Input
+                    label="Email" type="email" placeholder="you@example.com"
+                    leftIcon={<Mail className="h-4 w-4 text-slate-400" />}
+                    error={registerForm.formState.errors.email?.message}
+                    onFocus={() => handleFocus("email")} onBlur={handleBlur}
+                    {...registerForm.register("email")}
+                    className={theme === 'dark' ? "bg-slate-950/50 border-slate-700 text-white placeholder:text-slate-500" : "bg-white"}
+                  />
+                  <Input
+                    label="Password" type={showRegPw ? "text" : "password"} placeholder="••••••••"
+                    leftIcon={<Lock className="h-4 w-4 text-slate-400" />}
+                    rightIcon={
+                      <button type="button" onClick={() => {setShowRegPw(!showRegPw); if(soundEnabled) playSound('click');}} className="text-slate-400 hover:text-primary-500">
+                        {showRegPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     }
                     error={registerForm.formState.errors.password?.message}
+                    onFocus={() => handleFocus("password")} onBlur={handleBlur}
                     {...registerForm.register("password")}
+                    className={theme === 'dark' ? "bg-slate-950/50 border-slate-700 text-white placeholder:text-slate-500" : "bg-white"}
                   />
-                </div>
-                <div className="relative">
-                  <Input
-                    label="Confirm Password"
-                    id="register-confirm"
-                    type={showRegConfirmPw ? "text" : "password"}
-                    autoComplete="new-password"
-                    placeholder="Re-enter your password"
-                    leftIcon={<Lock className="h-4 w-4" aria-hidden="true" />}
-                    rightIcon={
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        onClick={() => setShowRegConfirmPw((s) => !s)}
-                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none"
-                        aria-label={
-                          showRegConfirmPw ? "Hide password" : "Show password"
-                        }
-                      >
-                        {showRegConfirmPw ? (
-                          <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="submit" fullWidth disabled={isSubmittingForm || submitSuccess}
+                      className="mt-6 bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-500 hover:to-accent-500 text-white border-0 shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] transition-all h-12 rounded-xl text-base font-semibold overflow-hidden"
+                    >
+                      <AnimatePresence mode="wait">
+                        {isSubmittingForm ? (
+                          <motion.div key="spin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Processing...</motion.div>
+                        ) : submitSuccess ? (
+                          <motion.div key="check" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> Success!</motion.div>
                         ) : (
-                          <Eye className="h-4 w-4" aria-hidden="true" />
+                          <motion.div key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">Create Account <ArrowRight className="h-4 w-4" /></motion.div>
                         )}
-                      </button>
-                    }
-                    error={
-                      registerForm.formState.errors.confirmPassword?.message
-                    }
-                    {...registerForm.register("confirmPassword")}
-                  />
-                </div>
-                <label className="flex items-start gap-2 cursor-pointer select-none text-xs text-slate-600 dark:text-slate-400">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                    checked={agreeTerms}
-                    onChange={(e) => setAgreeTerms(e.target.checked)}
-                  />
+                      </AnimatePresence>
+                    </Button>
+                  </motion.div>
+                </motion.form>
+              )}
+            </AnimatePresence>
 
-                  <span>
-                    I agree to the{" "}
-                    <a
-                      href="#terms"
-                      className="text-primary-600 hover:underline dark:text-primary-400"
-                    >
-                      Terms
-                    </a>{" "}
-                    and{" "}
-                    <a
-                      href="#privacy"
-                      className="text-primary-600 hover:underline dark:text-primary-400"
-                    >
-                      Privacy Policy
-                    </a>
-                    .
-                  </span>
-                </label>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  disabled={!agreeTerms}
-                  loading={registerForm.formState.isSubmitting || isLoading}
-                  rightIcon={
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  }
-                >
-                  {registerForm.formState.isSubmitting || isLoading
-                    ? "Creating account..."
-                    : "Create Account"}
-                </Button>
-              </form>
-            )}
-
-            <div className="mt-6 flex items-center gap-3 before:flex-1 before:h-px before:bg-slate-200 before:dark:bg-slate-800 after:flex-1 after:h-px after:bg-slate-200 after:dark:bg-slate-800">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                Or continue with
-              </span>
-            </div>
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <SSOButton provider="Google" icon={<GoogleIcon />} />
-              <SSOButton provider="GitHub" icon={<GitHubIcon />} />
+            <div className="mt-8 flex items-center justify-center gap-2">
+              <div className={`h-px w-full ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} />
+              <span className="text-xs font-medium text-slate-500 whitespace-nowrap">OR CONTINUE WITH</span>
+              <div className={`h-px w-full ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} />
             </div>
 
-            <div className="mt-6 flex items-center gap-3 before:flex-1 before:h-px before:bg-slate-200 before:dark:bg-slate-800 after:flex-1 after:h-px after:bg-slate-200 after:dark:bg-slate-800">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                Demo credentials
-              </span>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button disabled className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-colors opacity-70 cursor-not-allowed ${theme === 'dark' ? 'bg-slate-900/50 border-slate-700/50 text-slate-300' : 'bg-white border-slate-200 text-slate-700'}`}>
+                <GoogleIcon /> <span className="text-sm font-medium">Google</span>
+              </button>
+              <button disabled className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-colors opacity-70 cursor-not-allowed ${theme === 'dark' ? 'bg-slate-900/50 border-slate-700/50 text-slate-300' : 'bg-white border-slate-200 text-slate-700'}`}>
+                <GitHubIcon /> <span className="text-sm font-medium">GitHub</span>
+              </button>
             </div>
-            <motion.div
-              initial={false}
-              className="mt-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-3 sm:p-4 text-xs"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                    <CheckCircle2
-                      className="h-3.5 w-3.5 text-accent-600 dark:text-accent-400"
-                      aria-hidden="true"
-                    />
-                    <span className="font-medium">Email:</span> {DEMO_EMAIL}
-                  </p>
-                  <p className="text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                    <CheckCircle2
-                      className="h-3.5 w-3.5 text-accent-600 dark:text-accent-400"
-                      aria-hidden="true"
-                    />
-                    <span className="font-medium">Password:</span>{" "}
-                    {DEMO_PASSWORD}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={fillDemo}
-                  className="shrink-0"
-                >
-                  Fill
-                </Button>
-              </div>
-              <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-                Explore the app instantly with pre-populated demo data.
-              </p>
-            </motion.div>
-          </div>
-
-          <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-            {mode === "login"
-              ? "Don't have an account?"
-              : "Already have an account?"}{" "}
-            <button
-              type="button"
-              onClick={() => {
-                setMode(mode === "login" ? "register" : "login");
-                setNetworkError(null);
-              }}
-              className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-            >
-              {mode === "login" ? "Sign up" : "Sign in"}
-            </button>
-          </p>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
