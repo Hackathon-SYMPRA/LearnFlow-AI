@@ -47,11 +47,11 @@ export const generateQuizSchema = z
     documentIds: z
       .array(z.string())
       .min(1, "Please select at least one document"),
-    subject: z.string().min(1, "Please select a subject"),
+    subject: z.string().optional(),
     topic: z
       .string()
-      .min(2, "Please enter a chapter or topic")
-      .max(200, "Topic is too long"),
+      .max(200, "Topic is too long")
+      .optional(),
     difficulty: z.enum(["easy", "medium", "hard"]),
     questionCount: z
       .number()

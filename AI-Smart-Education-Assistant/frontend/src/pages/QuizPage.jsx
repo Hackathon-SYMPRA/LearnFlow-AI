@@ -776,7 +776,7 @@ export const QuizPage = () => {
             <CardContent className="space-y-5">
               <div>
                 <label className="label-base mb-1.5" htmlFor="subject">
-                  Subject
+                  Subject <span className="text-slate-400 font-normal text-xs">(Optional)</span>
                 </label>
                 <Controller
                   name="subject"
@@ -802,7 +802,7 @@ export const QuizPage = () => {
 
               <div>
                 <label className="label-base mb-1.5" htmlFor="topic">
-                  Chapter / Topic
+                  Chapter / Topic <span className="text-slate-400 font-normal text-xs">(Optional)</span>
                 </label>
                 <input
                   id="topic"
