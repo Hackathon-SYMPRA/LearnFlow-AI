@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { SUBJECTS, SUBJECT_COLORS } from "@/constants";
 import { generateQuizSchema } from "@/utils/validation";
+import { documentService, quizService } from "@/services";
 import { Button } from "@/components/ui/Button";
 import {
   Card,
@@ -365,11 +366,24 @@ export const QuizPage = () => {
     { label: "Crafting questions", done: false },
     { label: "Finalizing quiz", done: false },
   ]);
+  const [documents, setDocuments] = useState([]);
   const [searchedDoc, setSearchedDoc] = useState("");
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      try {
+        const res = await documentService.list();
+        setDocuments(res.data || []);
+      } catch (err) {
+        toast.error("Failed to load documents");
+      }
+    };
+    fetchDocs();
+  }, []);
 
   const filteredDocs = useMemo(
     () =>
-      MOCK_DOCUMENTS.filter(
+      documents.filter(
         (d) =>
           d.name.toLowerCase().includes(searchedDoc.toLowerCase()) ||
           d.subject.toLowerCase().includes(searchedDoc.toLowerCase()),
@@ -378,35 +392,82 @@ export const QuizPage = () => {
   );
 
   const runGenerationSteps = async (config) => {
+    if (!config.documentIds || config.documentIds.length === 0) {
+      toast.error("Please select at least one document.");
+      return;
+    }
+    
     setIsGenerating(true);
     setProcessingSteps((prev) => prev.map((s) => ({ ...s, done: false })));
 
-    const stepTimings = [700, 900, 1100, 600];
-    for (let i = 0; i < stepTimings.length; i++) {
-      await new Promise((res) => setTimeout(res, stepTimings[i]));
-      setProcessingSteps((prev) =>
-        prev.map((s, idx) => (idx <= i ? { ...s, done: true } : s)),
-      );
-    }
+    try {
+      // Simulate progress for UI
+      const timer = setInterval(() => {
+        setProcessingSteps((prev) => {
+          const nextIdx = prev.findIndex((s) => !s.done);
+          if (nextIdx !== -1 && nextIdx < prev.length - 1) {
+            const newSteps = [...prev];
+            newSteps[nextIdx].done = true;
+            return newSteps;
+          }
+          return prev;
+        });
+      }, 1500);
 
-    const generatedQs = generateMockQuestions(config);
-    setQuestions(generatedQs);
-    setAnswers({});
-    setFlagged(new Set());
-    setBookmarked(new Set());
-    setCurrentQ(0);
-    setExamMode(config.examMode);
-    if (config.examMode && config.examDuration) {
-      const secs = config.examDuration * 60;
-      setTimeLeft(secs);
-      setTotalTime(secs);
-    } else {
-      setTotalTime(0);
-      setTimeLeft(0);
+      const res = await quizService.generate(config.documentIds, {
+        difficulty: config.difficulty,
+        num_questions: config.questionCount,
+        topic: config.topic,
+      });
+      
+      clearInterval(timer);
+      setProcessingSteps((prev) => prev.map((s) => ({ ...s, done: true })));
+
+      let generatedQs = res.data?.questions || res.data || [];
+      if (!Array.isArray(generatedQs)) {
+        throw new Error("Invalid response from server");
+      }
+      
+      generatedQs = generatedQs.map((q, idx) => ({
+        id: generateId(),
+        type: "mcq",
+        question: q.question,
+        options: q.options || ["A", "B", "C", "D"],
+        correctAnswer: q.options ? Math.max(0, q.options.indexOf(q.answer)) : 0,
+        explanation: q.explanation || "No explanation provided.",
+        sourceDoc: "Selected Document",
+        topic: config.topic || "General",
+        difficulty: config.difficulty,
+      }));
+      
+      if (generatedQs.length === 0) {
+        throw new Error("No questions could be generated");
+      }
+
+      setQuestions(generatedQs);
+      setAnswers({});
+      setFlagged(new Set());
+      setBookmarked(new Set());
+      setCurrentQ(0);
+      setExamMode(config.examMode);
+      
+      if (config.examMode && config.examDuration) {
+        const secs = config.examDuration * 60;
+        setTimeLeft(secs);
+        setTotalTime(secs);
+      } else {
+        setTotalTime(0);
+        setTimeLeft(0);
+      }
+      
+      setIsGenerating(false);
+      setState("quiz");
+      toast.success("Quiz generated successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate quiz. Please try again.");
+      setIsGenerating(false);
     }
-    setIsGenerating(false);
-    setState("quiz");
-    toast.success("Quiz generated successfully!");
   };
 
   const {

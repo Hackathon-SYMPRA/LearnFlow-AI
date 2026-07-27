@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 
 class StudyPlannerBase(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     exam_date: str
     daily_hours: int
     study_schedule: List[dict] = []

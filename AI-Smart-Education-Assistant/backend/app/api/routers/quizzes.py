@@ -75,8 +75,22 @@ async def generate_quiz_endpoint(
     from app.services.ai.rag_service import rag_service
     from app.services.ai.generator import ai_generator
     
-    # Simple semantic search to get context if docs not provided
-    context_chunks = await rag_service.similarity_search("Generate quiz", user_id=current_user.id, k=5)
+    import json
+    
+    # Simple semantic search to get context from specific documents
+    context_chunks = await rag_service.similarity_search(
+        "Generate quiz", 
+        user_id=current_user.id, 
+        top_k=10, 
+        document_ids=req.document_ids
+    )
     raw_response = await ai_generator.generate_quiz(context_chunks, req.difficulty, req.num_questions)
     
-    return SuccessResponse(message="Quiz generated", data=raw_response)
+    try:
+        # ai_generator should return a JSON array as a string
+        data = json.loads(raw_response)
+    except Exception as e:
+        # fallback if not valid JSON
+        data = raw_response
+        
+    return SuccessResponse(message="Quiz generated", data=data)
