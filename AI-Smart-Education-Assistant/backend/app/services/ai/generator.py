@@ -26,12 +26,16 @@ class AIGenerator:
         context_chunks: List[Dict], 
         chat_history: List[Dict] = None,
         language: str = "English",
-        images: List[str] = None
+        images: List[str] = None,
+        doc_names: List[str] = None
     ) -> str:
         context_str = self._build_context_string(context_chunks)
         
+        doc_info = f"The student has selected the following documents: {', '.join(doc_names)}\n" if doc_names else ""
         system_prompt = f"""
-        You are an intelligent educational assistant. Use the following extracted context from study materials to answer the student's question if relevant.
+        You are an intelligent educational assistant. {doc_info}
+        Use the following extracted context from study materials to answer the student's question if relevant.
+        If the student asks to explain or summarize the selected document(s), use your general knowledge about the document's topic along with any provided context to explain it.
         If the context is empty, missing, or irrelevant to the question, act as a helpful AI assistant and answer the question directly using your general knowledge. Do NOT complain about missing context.
         Always cite the source document name if you do use context.
         Please respond entirely in the {language} language.
@@ -81,12 +85,16 @@ class AIGenerator:
         context_chunks: List[Dict], 
         chat_history: List[Dict] = None,
         language: str = "English",
-        images: List[str] = None
+        images: List[str] = None,
+        doc_names: List[str] = None
     ):
         context_str = self._build_context_string(context_chunks)
         
+        doc_info = f"The student has selected the following documents: {', '.join(doc_names)}\n" if doc_names else ""
         system_prompt = f"""
-        You are an intelligent educational assistant. Use the following extracted context from study materials to answer the student's question if relevant.
+        You are an intelligent educational assistant. {doc_info}
+        Use the following extracted context from study materials to answer the student's question if relevant.
+        If the student asks to explain or summarize the selected document(s), use your general knowledge about the document's topic along with any provided context to explain it.
         If the context is empty, missing, or irrelevant to the question, act as a helpful AI assistant and answer the question directly using your general knowledge. Do NOT complain about missing context.
         Always cite the source document name if you do use context.
         Please respond entirely in the {language} language.

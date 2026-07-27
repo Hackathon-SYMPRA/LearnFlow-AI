@@ -26,6 +26,13 @@ class DocumentRepository:
         await collection.insert_one(doc_dict)
         return DocumentInDB(**doc_dict)
 
+    async def get_by_id(self, doc_id: str) -> Optional[DocumentInDB]:
+        collection = self._get_collection()
+        doc = await collection.find_one({"_id": doc_id})
+        if doc:
+            return DocumentInDB(**doc)
+        return None
+
     async def get_by_user(self, user_id: str) -> List[DocumentInDB]:
         collection = self._get_collection()
         cursor = collection.find({"user_id": user_id})

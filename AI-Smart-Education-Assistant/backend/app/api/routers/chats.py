@@ -7,6 +7,7 @@ from app.models.chat import ChatBase, ChatInDB
 from app.services.chat import chat_service
 from app.services.ai.generator import ai_generator
 from app.services.ai.rag_service import rag_service
+from app.repositories.document import document_repo
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import json
@@ -80,6 +81,14 @@ async def send_message(
     
     # Process message with AI
     doc_ids = chat.document_ids if hasattr(chat, "document_ids") else None
+    
+    doc_names = []
+    if doc_ids:
+        for did in doc_ids:
+            d = await document_repo.get_by_id(did)
+            if d:
+                doc_names.append(d.original_name)
+
     context_chunks = rag_service.similarity_search(request.message, current_user.id, top_k=5, document_ids=doc_ids)
     history = chat.messages
     response_text = await ai_generator.generate_chat_response(
@@ -87,7 +96,8 @@ async def send_message(
         context_chunks=context_chunks, 
         chat_history=history,
         language=request.language,
-        images=request.images
+        images=request.images,
+        doc_names=doc_names
     )
     
     # Append to chat
@@ -110,6 +120,14 @@ async def send_message_stream(
         raise HTTPException(status_code=404, detail="Chat not found")
     
     doc_ids = chat.document_ids if hasattr(chat, "document_ids") else None
+    
+    doc_names = []
+    if doc_ids:
+        for did in doc_ids:
+            d = await document_repo.get_by_id(did)
+            if d:
+                doc_names.append(d.original_name)
+
     context_chunks = rag_service.similarity_search(request.message, current_user.id, top_k=5, document_ids=doc_ids)
     history = chat.messages
     
@@ -124,7 +142,8 @@ async def send_message_stream(
             context_chunks=context_chunks, 
             chat_history=history,
             language=request.language,
-            images=request.images
+            images=request.images,
+            doc_names=doc_names
         ):
             if chunk:
                 full_response += chunk
