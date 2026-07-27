@@ -137,36 +137,7 @@ export const Header = ({ onToggleSidebar }) => {
           <CompactLogo size="32px" showWordmark={true} />
         </div>
 
-        <button
-          type="button"
-          onClick={openGlobalSearch}
-          className={cn(
-            "hidden md:flex flex-1 max-w-xl mx-auto items-center gap-3 rounded-full border border-slate-200/50 bg-white/50 px-4 py-2 text-left text-sm text-slate-500 transition-all hover:border-electric-300 hover:bg-white hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] dark:border-white/10 dark:bg-black/20 dark:text-slate-400 dark:hover:border-electric-500/50 dark:hover:bg-white/5",
-          )}
-          aria-label="Open search (⌘K)"
-        >
-          <Search
-            className="h-4 w-4 shrink-0 text-slate-400"
-            aria-hidden="true"
-          />
-          <span className="flex-1 truncate">
-            Search documents, chats, notes...
-          </span>
-          <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-full border border-slate-300/50 bg-slate-100/50 px-2 py-0.5 font-mono text-[10px] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-            <span className="text-[9px]">⌘</span>K
-          </kbd>
-        </button>
 
-        {isMobile && (
-          <button
-            type="button"
-            onClick={openGlobalSearch}
-            className="btn-ghost h-10 w-10"
-            aria-label="Open search"
-          >
-            <Search className="h-5 w-5" />
-          </button>
-        )}
 
         <div className="hidden lg:flex items-center" ref={subjectRef}>
           <button
