@@ -525,39 +525,10 @@ export const ChatPage = () => {
     return last?.citations ?? [];
   }, [messages]);
 
-  const createNewSession = useCallback(async () => {
+  const createNewSession = useCallback(() => {
     if (isStreaming) return;
-    try {
-      const created = await chatService.createSession();
-      const sessionData = created.data || created;
-      const newSess = {
-        ...sessionData,
-        id: sessionData.id ?? `sess-${generateId()}`,
-        title: sessionData.title ?? "New Chat",
-        lastMessage: "",
-        messages: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setSessions((prev) => [newSess, ...prev]);
-      navigate(`${ROUTES.chat}/${newSess.id}`);
-      setMobileDrawerOpen(false);
-    } catch {
-      const id = `sess-${generateId()}`;
-      const newSess = {
-        id,
-        title: "New Chat",
-        lastMessage: "",
-        messages: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        pinned: false,
-        messageCount: 0,
-      };
-      setSessions((prev) => [newSess, ...prev]);
-      navigate(`${ROUTES.chat}/${id}`);
-      setMobileDrawerOpen(false);
-    }
+    navigate(ROUTES.chat);
+    setMobileDrawerOpen(false);
   }, [isStreaming, navigate]);
 
   const selectSession = useCallback(
