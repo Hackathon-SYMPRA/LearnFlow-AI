@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Plus,
@@ -345,6 +345,7 @@ const downloadJSON = (filename, data) => {
 export const ChatPage = () => {
   const navigate = useNavigate();
   const { sessionId } = useParams();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const { copy, copied } = useCopyToClipboard();
 
@@ -843,6 +844,16 @@ export const ChatPage = () => {
     if (avg >= 0.6) return { level: "Medium", value: avg };
     return { level: "Low", value: avg };
   };
+
+  useEffect(() => {
+    if (location.state?.initialMessage && handleSend) {
+      const msg = location.state.initialMessage;
+      navigate(location.pathname, { replace: true, state: {} });
+      setTimeout(() => {
+        handleSend(msg);
+      }, 300);
+    }
+  }, [location.state, handleSend, navigate, location.pathname]);
 
   const subjectColor = subjectColorFor(currentSession?.subject);
 

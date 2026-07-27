@@ -26,7 +26,7 @@ import { ROUTES, SUBJECTS, STORAGE_KEYS } from "@/constants";
 import { Button } from "@/components/ui/Button";
 import { NotificationCenter, NotificationBell } from "./NotificationCenter";
 import { cn, getInitials } from "@/utils/format";
-
+import { CompactLogo } from "@/components/ui/CompactLogo";
 export const Header = ({ onToggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -134,12 +134,7 @@ export const Header = ({ onToggleSidebar }) => {
         )}
 
         <div className="flex items-center gap-2 lg:hidden">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 text-white">
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-          </div>
-          <span className="font-bold text-slate-900 dark:text-slate-100">
-            EduMind
-          </span>
+          <CompactLogo size="32px" showWordmark={true} />
         </div>
 
         <button

@@ -133,6 +133,11 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const [terminalInput, setTerminalInput] = useState("");
 
+  const handleTerminalSubmit = () => {
+    if (!terminalInput.trim()) return;
+    navigate(ROUTES.chat, { state: { initialMessage: terminalInput } });
+  };
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good Morning";
@@ -269,10 +274,11 @@ export const DashboardPage = () => {
                     type="text" 
                     value={terminalInput}
                     onChange={(e) => setTerminalInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleTerminalSubmit()}
                     placeholder="E.g., Summarize Newton's laws..." 
                     className="flex-1 bg-transparent border-none focus:outline-none text-slate-900 dark:text-white placeholder:text-slate-400"
                   />
-                  <button className="p-2 bg-electric-500 hover:bg-electric-600 text-white rounded-md transition-colors">
+                  <button onClick={handleTerminalSubmit} className="p-2 bg-electric-500 hover:bg-electric-600 text-white rounded-md transition-colors">
                     <Send className="w-4 h-4" />
                   </button>
                   <button className="p-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-md transition-colors">

@@ -24,7 +24,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks";
 import { cn } from "@/utils/format";
-
+import { CompactLogo } from "@/components/ui/CompactLogo";
 const navItems = [
   { route: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { route: "upload", label: "Upload Center", icon: UploadCloud },
@@ -68,14 +68,18 @@ export const Sidebar = ({ isOpen, onClose }) => {
             collapsed && "justify-center w-full",
           )}
         >
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-electric-500 to-electric-600 text-white shadow-[0_0_15px_rgba(139,92,246,0.5)]">
-            <Sparkles className="h-5 w-5 animate-pulse" aria-hidden="true" />
-            <div className="absolute inset-0 rounded-xl bg-white/20 mix-blend-overlay animate-shimmer" />
-          </div>
+          <CompactLogo size="44px" />
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate text-base font-bold text-slate-900 dark:text-white tracking-wide">
-                LearnFlow<span className="text-electric-400">.ai</span>
+              <p 
+                className="truncate text-[22px] font-bold tracking-wide bg-clip-text text-transparent"
+                style={{
+                  backgroundImage: "linear-gradient(90deg, #8B5CF6 0%, #22D3EE 25%, #EC4899 50%, #FBBF24 75%, #8B5CF6 100%)",
+                  backgroundSize: "200% auto",
+                  animation: "shimmer-text-v2 4s linear infinite"
+                }}
+              >
+                LearnFlow<span className="text-electric-500 bg-none" style={{ WebkitTextFillColor: '#8B5CF6' }}>.ai</span>
               </p>
               <p className="truncate text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
                 Premium Edition
