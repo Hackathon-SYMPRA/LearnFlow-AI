@@ -139,73 +139,7 @@ export const Header = ({ onToggleSidebar }) => {
 
 
 
-        <div className="hidden lg:flex items-center" ref={subjectRef}>
-          <button
-            type="button"
-            onClick={() => setSubjectOpen((o) => !o)}
-            className="btn-outline h-10 gap-2"
-            aria-haspopup="listbox"
-            aria-expanded={subjectOpen}
-          >
-            <BookOpen className="h-4 w-4" aria-hidden="true" />
-            <span className="text-sm">{currentSubject ?? "All Subjects"}</span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 transition-transform",
-                subjectOpen && "rotate-180",
-              )}
-            />
-          </button>
-          <AnimatePresence>
-            {subjectOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="absolute top-16 right-auto left-1/2 z-50 w-56 rounded-xl bg-white shadow-dropdown dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2"
-              >
-                <ul role="listbox" className="max-h-72 overflow-y-auto">
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCurrentSubject(null);
-                        setSubjectOpen(false);
-                      }}
-                      className={cn(
-                        "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
-                        currentSubject === null
-                          ? "bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400"
-                          : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
-                      )}
-                    >
-                      All Subjects
-                    </button>
-                  </li>
-                  {SUBJECTS.map((subject) => (
-                    <li key={subject}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCurrentSubject(subject);
-                          setSubjectOpen(false);
-                        }}
-                        className={cn(
-                          "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
-                          currentSubject === subject
-                            ? "bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400"
-                            : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
-                        )}
-                      >
-                        {subject}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
           
