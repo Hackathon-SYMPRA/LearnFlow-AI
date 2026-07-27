@@ -373,7 +373,14 @@ export const QuizPage = () => {
     const fetchDocs = async () => {
       try {
         const res = await documentService.list();
-        setDocuments(res.data || []);
+        const mappedDocs = (res.data || []).map(doc => ({
+          id: doc.id,
+          name: doc.original_name || doc.file_name || "Unknown Document",
+          subject: doc.subject_id || "General",
+          pages: doc.total_pages || 1,
+          type: doc.file_type || "pdf"
+        }));
+        setDocuments(mappedDocs);
       } catch (err) {
         toast.error("Failed to load documents");
       }
@@ -385,10 +392,10 @@ export const QuizPage = () => {
     () =>
       documents.filter(
         (d) =>
-          d.name.toLowerCase().includes(searchedDoc.toLowerCase()) ||
-          d.subject.toLowerCase().includes(searchedDoc.toLowerCase()),
+          (d.name || "").toLowerCase().includes(searchedDoc.toLowerCase()) ||
+          (d.subject || "").toLowerCase().includes(searchedDoc.toLowerCase()),
       ),
-    [searchedDoc],
+    [searchedDoc, documents]
   );
 
   const runGenerationSteps = async (config) => {
