@@ -3,8 +3,9 @@ import uuid
 import aiofiles
 from fastapi import UploadFile, HTTPException
 from typing import List
+from app.core.config import settings
 
-UPLOAD_DIRECTORY = "uploads"
+UPLOAD_DIRECTORY = settings.UPLOAD_DIRECTORY
 ALLOWED_EXTENSIONS = {"pdf", "docx", "txt", "png", "jpg", "jpeg"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 

@@ -16,13 +16,19 @@ router = APIRouter()
 class ChatCreateRequest(BaseModel):
     title: Optional[str] = "New Chat"
     documentIds: Optional[List[str]] = []
+    chat_type: Optional[str] = "General"
 
 @router.post("/", response_model=SuccessResponse)
 async def create_chat(
     obj_in: ChatCreateRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
-    chat_base = ChatBase(user_id=current_user.id, title=obj_in.title, document_ids=obj_in.documentIds)
+    chat_base = ChatBase(
+        user_id=current_user.id, 
+        title=obj_in.title, 
+        document_ids=obj_in.documentIds,
+        chat_type=obj_in.chat_type
+    )
     obj = await chat_service.create(chat_base, current_user.id)
     return SuccessResponse(message="Chat created successfully", data=obj.model_dump())
 

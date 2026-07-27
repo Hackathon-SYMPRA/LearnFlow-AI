@@ -87,8 +87,8 @@ export const chatService = {
     return api.get("/chat/sessions");
   },
 
-  async createSession(title, documentIds) {
-    return api.post("/chat/sessions", { title, documentIds });
+  async createSession(title, documentIds = [], chatType = "General") {
+    return api.post("/chat/sessions", { title, documentIds, chat_type: chatType });
   },
 
   async getSession(id) {

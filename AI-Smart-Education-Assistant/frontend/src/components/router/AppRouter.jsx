@@ -142,6 +142,7 @@ export const AppRouter = () => {
             <Route path="/notes" element={withSuspense(NotesPage)} />
             <Route path="/mindmap" element={withSuspense(MindMapPage)} />
             <Route path="/ai-teacher" element={withSuspense(AITeacherPage)} />
+            <Route path="/ai-teacher/:sessionId" element={withSuspense(AITeacherPage)} />
             <Route path="/quiz" element={withSuspense(QuizPage)} />
             <Route path="/flashcards" element={withSuspense(FlashcardsPage)} />
             <Route path="/planner" element={withSuspense(PlannerPage)} />

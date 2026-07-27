@@ -7,6 +7,7 @@ from app.schemas.response import SuccessResponse
 from app.services.upload import upload_service
 from app.repositories.document import document_repo
 from app.api.routers.ai import background_process_document
+from app.core.config import settings
 
 router = APIRouter()
 

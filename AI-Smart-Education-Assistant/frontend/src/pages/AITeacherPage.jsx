@@ -2,9 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { GraduationCap, Mic, Sparkles, CheckCircle2, XCircle, Square, Play, FileText, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { aiService, documentService } from "@/services";
+import { aiService, documentService, chatService } from "@/services";
+import { useParams, useNavigate } from "react-router-dom";
+import { generateId } from "@/utils/format";
 
 export const AITeacherPage = () => {
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
+
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [documents, setDocuments] = useState([]);
@@ -12,6 +17,7 @@ export const AITeacherPage = () => {
   const [language, setLanguage] = useState("Marathi");
   
   const [isMockTestActive, setIsMockTestActive] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState(sessionId || null);
   
   // Voice Recording States
   const [isRecording, setIsRecording] = useState(false);
@@ -21,7 +27,25 @@ export const AITeacherPage = () => {
   
   useEffect(() => {
     fetchDocuments();
-  }, []);
+    if (sessionId) {
+      loadSession(sessionId);
+    }
+  }, [sessionId]);
+
+  const loadSession = async (id) => {
+    try {
+      const res = await chatService.getSession(id);
+      if (res.data) {
+        setMessages(res.data.messages || []);
+        if (res.data.document_ids && res.data.document_ids.length > 0) {
+          setSelectedDoc(res.data.document_ids[0]);
+        }
+        setIsMockTestActive(true);
+      }
+    } catch (err) {
+      toast.error("Failed to load session");
+    }
+  };
 
   const fetchDocuments = async () => {
     try {
@@ -58,16 +82,39 @@ export const AITeacherPage = () => {
     setIsMockTestActive(true);
     setIsTyping(true);
     
+    // Create new session in DB
+    const newId = `sess-${generateId()}`;
+    setCurrentSessionId(newId);
+    
+    let dbSessionId = newId;
+    try {
+      const doc = documents.find(d => d.id === selectedDoc || d._id === selectedDoc);
+      const docName = doc ? (doc.original_name || doc.file_name) : "Document";
+      const created = await chatService.createSession(`Mock Test: ${docName}`, [selectedDoc], "Teacher");
+      const sessionData = created.data || created;
+      dbSessionId = sessionData.id || sessionData._id || newId;
+      setCurrentSessionId(dbSessionId);
+      // We don't navigate immediately to avoid interrupting the test flow, but you could:
+      // navigate(`/ai-teacher/${dbSessionId}`, { replace: true });
+    } catch (err) {
+      console.error("Failed to create session in DB", err);
+    }
+
     try {
       const res = await aiService.generateMockTestQuestion(selectedDoc, language, []);
       const question = res.data?.response || "Let's start. Please tell me about the main concepts.";
       
-      setMessages([{
+      const newMsgs = [{
         id: Date.now(),
         role: "assistant",
         content: question,
         isExamMode: true,
-      }]);
+      }];
+      setMessages(newMsgs);
+      
+      if (dbSessionId && !dbSessionId.startsWith("sess-")) {
+        await chatService.updateSession(dbSessionId, { messages: newMsgs }).catch(console.error);
+      }
       
       speakText(question, language);
     } catch (error) {
@@ -174,8 +221,13 @@ export const AITeacherPage = () => {
         content: evaluation,
       };
       
-      setMessages(prev => [...prev, aiMsg]);
+      const finalMsgs = [...newMessages, aiMsg];
+      setMessages(finalMsgs);
       speakText(evaluation, language);
+      
+      if (currentSessionId && !currentSessionId.startsWith("sess-")) {
+        await chatService.updateSession(currentSessionId, { messages: finalMsgs }).catch(console.error);
+      }
     } catch (error) {
       toast.error("Failed to evaluate answer.");
       const errorMsg = {
