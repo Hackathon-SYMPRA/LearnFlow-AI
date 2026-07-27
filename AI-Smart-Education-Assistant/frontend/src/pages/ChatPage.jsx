@@ -1332,24 +1332,6 @@ export const ChatPage = () => {
                   Start a conversation using your uploaded study materials.
                   Answers include citations, related questions, and exam tips.
                 </p>
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {SUGGESTED_PROMPTS.map((p, i) => (
-                    <motion.button
-                      key={i}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.05 * i }}
-                      type="button"
-                      onClick={() => pickSuggestedPrompt(p)}
-                      className="group flex items-start gap-2 text-left rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50/60 dark:hover:bg-primary-950/30 transition"
-                    >
-                      <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-primary-500" />
-                      <span className="text-xs md:text-sm leading-snug text-slate-700 dark:text-slate-200 group-hover:text-primary-700 dark:group-hover:text-primary-300">
-                        {p}
-                      </span>
-                    </motion.button>
-                  ))}
-                </div>
               </motion.div>
             </div>
           ) : (

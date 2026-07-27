@@ -31,9 +31,9 @@ class AIGenerator:
         context_str = self._build_context_string(context_chunks)
         
         system_prompt = f"""
-        You are an intelligent educational assistant. Use the following extracted context from study materials to answer the student's question.
-        If the answer is not in the context, inform the student that you don't have sufficient study material on this, but provide a helpful, general answer if possible while mentioning uncertainty.
-        Always cite the source document name if you use context.
+        You are an intelligent educational assistant. Use the following extracted context from study materials to answer the student's question if relevant.
+        If the context is empty, missing, or irrelevant to the question, act as a helpful AI assistant and answer the question directly using your general knowledge. Do NOT complain about missing context.
+        Always cite the source document name if you do use context.
         Please respond entirely in the {language} language.
 
         Context:
@@ -86,9 +86,9 @@ class AIGenerator:
         context_str = self._build_context_string(context_chunks)
         
         system_prompt = f"""
-        You are an intelligent educational assistant. Use the following extracted context from study materials to answer the student's question.
-        If the answer is not in the context, inform the student that you don't have sufficient study material on this, but provide a helpful, general answer if possible while mentioning uncertainty.
-        Always cite the source document name if you use context.
+        You are an intelligent educational assistant. Use the following extracted context from study materials to answer the student's question if relevant.
+        If the context is empty, missing, or irrelevant to the question, act as a helpful AI assistant and answer the question directly using your general knowledge. Do NOT complain about missing context.
+        Always cite the source document name if you do use context.
         Please respond entirely in the {language} language.
 
         Context:
