@@ -73,7 +73,8 @@ export const HistoryPage = () => {
     if (search) {
       const query = search.toLowerCase();
       const preview = getPreview(s).toLowerCase();
-      if (!s.title.toLowerCase().includes(query) && !preview.includes(query)) {
+      const title = (s.title || "").toLowerCase();
+      if (!title.includes(query) && !preview.includes(query)) {
         return false;
       }
     }
