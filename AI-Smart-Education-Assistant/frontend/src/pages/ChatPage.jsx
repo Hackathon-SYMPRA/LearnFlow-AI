@@ -42,8 +42,8 @@ import {
   Square,
   Volume2,
 } from "lucide-react";
-import { chatService } from "@/services";
-import { ROUTES, SUGGESTED_PROMPTS, SUBJECT_COLORS } from "@/constants";
+import { chatService, documentService } from "@/services";
+import { ROUTES, SUBJECT_COLORS } from "@/constants";
 import { useIsMobile, useDebounce, useCopyToClipboard } from "@/hooks";
 import {
   cn,
@@ -351,6 +351,12 @@ export const ChatPage = () => {
   const [sessions, setSessions] = useState([]);
   const [currentSession, setCurrentSession] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [selectedDocumentId, setSelectedDocumentId] = useState("");
+
+  useEffect(() => {
+    documentService.list().then(res => setDocuments(res.data || [])).catch(console.error);
+  }, []);
 
   useEffect(() => {
     chatService.listSessions().then(res => {
@@ -408,17 +414,36 @@ export const ChatPage = () => {
     if (!sessionId) {
       setCurrentSession(null);
       setMessages([]);
+      setSelectedDocumentId("");
       return;
     }
     const found = sessions.find((s) => s.id === sessionId);
     if (found) {
       setCurrentSession(found);
       setMessages(found.messages ?? []);
+      setSelectedDocumentId(found.document_ids?.[0] || found.documentIds?.[0] || "");
     } else {
       setCurrentSession(null);
       setMessages([]);
+      setSelectedDocumentId("");
     }
   }, [sessionId, sessions, isStreaming]);
+
+  const handleDocumentChange = async (e) => {
+    const docId = e.target.value;
+    setSelectedDocumentId(docId);
+    if (currentSession) {
+      try {
+        const docIds = docId ? [docId] : [];
+        await chatService.updateSession(currentSession.id, { document_ids: docIds });
+        setSessions(prev => prev.map(s => s.id === currentSession.id ? { ...s, document_ids: docIds } : s));
+        toast.success("Chat context updated");
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to update context");
+      }
+    }
+  };
 
   useEffect(() => {
     if (!isMobile) {
@@ -700,6 +725,7 @@ export const ChatPage = () => {
       let session = currentSession;
       if (!session) {
         const newId = `sess-${generateId()}`;
+        const docIds = selectedDocumentId ? [selectedDocumentId] : [];
         session = {
           id: newId,
           title: text.slice(0, 60).trim() || "New Chat",
@@ -710,12 +736,13 @@ export const ChatPage = () => {
           pinned: false,
           messageCount: 0,
           subject: "General",
+          document_ids: docIds,
         };
         setSessions((prev) => [session, ...prev]);
         navigate(`${ROUTES.chat}/${newId}`, { replace: true });
         try {
           try {
-            const created = await chatService.createSession(session.title);
+            const created = await chatService.createSession(session.title, docIds);
             const sessionData = created.data || created;
             const createdId = sessionData.id || sessionData._id;
             if (createdId && createdId !== newId) {
@@ -1228,6 +1255,18 @@ export const ChatPage = () => {
                   {currentSession.subject}
                 </span>
               )}
+              <select
+                value={selectedDocumentId}
+                onChange={handleDocumentChange}
+                className="ml-2 max-w-[150px] truncate text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-md px-2 py-1 outline-none text-slate-700 dark:text-slate-300 cursor-pointer"
+              >
+                <option value="">No Document</option>
+                {documents.map((doc) => (
+                  <option key={doc.id || doc._id} value={doc.id || doc._id}>
+                    {doc.original_name || doc.file_name}
+                  </option>
+                ))}
+              </select>
               <select
                 value={selectedLanguage}
                 onChange={(e) => setSelectedLanguage(e.target.value)}

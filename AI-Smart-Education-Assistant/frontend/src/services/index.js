@@ -117,6 +117,10 @@ export const chatService = {
     return api.patch(`/chat/sessions/${id}`, { title });
   },
 
+  async updateSession(id, data) {
+    return api.patch(`/chat/sessions/${id}`, data);
+  },
+
   async pinSession(id, pinned) {
     return api.patch(`/chat/sessions/${id}`, { pinned: pinned ?? true });
   },
