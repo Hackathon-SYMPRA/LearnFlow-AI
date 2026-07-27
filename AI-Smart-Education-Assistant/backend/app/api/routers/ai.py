@@ -28,7 +28,8 @@ class ChatQueryRequest(BaseModel):
     chat_history: Optional[List[ChatMessage]] = None
 
 class GenerateNotesRequest(BaseModel):
-    document_id: str
+    document_id: Optional[str] = None
+    topic: Optional[str] = None
     note_type: str = "Summary Notes"
 
 class TeacherChatRequest(BaseModel):
@@ -168,11 +169,18 @@ async def generate_notes(
     request: GenerateNotesRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
+    if request.topic and not request.document_id:
+        notes_text = await ai_generator.generate_notes_for_topic(request.topic, request.note_type)
+        return SuccessResponse(message="Notes generated successfully", data={"notes": notes_text})
+
+    if not request.document_id:
+        raise HTTPException(status_code=400, detail="Either a document_id or a topic must be provided.")
+
     context_chunks = rag_service.similarity_search(
         "main concepts and topics", 
         current_user.id, 
         top_k=15,
-        document_ids=[request.document_id] if request.document_id else None
+        document_ids=[request.document_id]
     )
     
     if not context_chunks:

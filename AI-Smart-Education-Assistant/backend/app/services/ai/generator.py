@@ -215,6 +215,19 @@ class AIGenerator:
         )
         return response.choices[0].message.content
 
+    async def generate_notes_for_topic(self, topic: str, note_type: str = "Summary Notes") -> str:
+        prompt = f"""
+        Generate {note_type} on the topic of "{topic}".
+        Structure the notes logically with headings, bullet points, and highlight key definitions or formulas where applicable.
+        Make sure the content is accurate, educational, and easy to understand.
+        """
+        response = await self.client.chat.completions.create(
+            model=self.text_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return response.choices[0].message.content
+
     async def generate_mindmap(self, context_chunks: List[Dict]) -> str:
         context_str = self._build_context_string(context_chunks)
         

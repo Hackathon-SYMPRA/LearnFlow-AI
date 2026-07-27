@@ -280,8 +280,8 @@ export const aiService = {
   async generateMindMap(document_id) {
     return api.post("/ai/generate/mindmap", { document_id });
   },
-  async generateNotes(document_id, note_type) {
-    return api.post("/ai/generate/notes", { document_id, note_type });
+  async generateNotes({ document_id, topic, note_type }) {
+    return api.post("/ai/generate/notes", { document_id, topic, note_type });
   },
   async generateMockTestQuestion(document_id, language, chat_history) {
     return api.post("/ai/mock-test/question", { document_id, language, chat_history });
