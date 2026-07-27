@@ -318,7 +318,7 @@ export const DashboardPage = () => {
                 <CalendarCheck className="w-5 h-5 text-success-500" />
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Smart Schedule</h3>
               </div>
-              <Button variant="ghost" size="sm" className="text-xs h-8">View All</Button>
+              <Button onClick={() => navigate(ROUTES.planner)} variant="ghost" size="sm" className="text-xs h-8">View All</Button>
             </div>
             
             <div className="flex-1 space-y-4">
@@ -336,7 +336,7 @@ export const DashboardPage = () => {
               ))}
             </div>
             
-            <Button className="w-full mt-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 shadow-md">
+            <Button onClick={() => navigate(ROUTES.planner)} className="w-full mt-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 shadow-md">
               + Add Task
             </Button>
           </GlassCard>
