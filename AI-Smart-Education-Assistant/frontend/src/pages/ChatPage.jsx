@@ -357,12 +357,19 @@ export const ChatPage = () => {
       // The API returns a list of sessions, often in the data property
       const fetchedSessions = res.data || [];
       // Normalize _id to id so it works with the rest of the component
-      const normalized = fetchedSessions.map(s => ({
-        ...s,
-        id: s._id || s.id,
-        updatedAt: s.updated_at || s.updatedAt || new Date().toISOString(),
-        createdAt: s.created_at || s.createdAt || new Date().toISOString(),
-      }));
+      const normalized = fetchedSessions.map(s => {
+        const msgs = s.messages || [];
+        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].content : "";
+        return {
+          ...s,
+          id: s._id || s.id,
+          updatedAt: s.updated_at || s.updatedAt || new Date().toISOString(),
+          createdAt: s.created_at || s.createdAt || new Date().toISOString(),
+          messages: msgs,
+          lastMessage: lastMsg,
+          messageCount: msgs.length
+        };
+      });
       setSessions(normalized);
     }).catch(err => {
       console.error("Failed to load sessions:", err);
@@ -397,6 +404,7 @@ export const ChatPage = () => {
   const scrollContainerRef = useRef(null);
 
   useEffect(() => {
+    if (isStreaming) return; // Do not overwrite messages while streaming
     if (!sessionId) {
       setCurrentSession(null);
       setMessages([]);
@@ -410,7 +418,7 @@ export const ChatPage = () => {
       setCurrentSession(null);
       setMessages([]);
     }
-  }, [sessionId, sessions]);
+  }, [sessionId, sessions, isStreaming]);
 
   useEffect(() => {
     if (!isMobile) {
@@ -780,7 +788,22 @@ export const ChatPage = () => {
           () => {
              setIsStreaming(false);
              setStreamingMsgId(null);
-             setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, isStreaming: false } : m));
+             setMessages((prev) => {
+               const newMsgs = prev.map((m) => m.id === assistantId ? { ...m, isStreaming: false } : m);
+               setSessions((prevSessions) => prevSessions.map((s) => {
+                 if (s.id === session.id) {
+                   return {
+                     ...s,
+                     messages: newMsgs,
+                     lastMessage: newMsgs[newMsgs.length - 1]?.content || s.lastMessage,
+                     messageCount: newMsgs.length,
+                     updatedAt: new Date().toISOString(),
+                   };
+                 }
+                 return s;
+               }));
+               return newMsgs;
+             });
           },
           (error) => {
              console.error("Stream error", error);
