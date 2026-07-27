@@ -78,7 +78,7 @@ async def generate_quiz_endpoint(
     import json
     
     # Simple semantic search to get context from specific documents
-    context_chunks = await rag_service.similarity_search(
+    context_chunks = rag_service.similarity_search(
         "Generate quiz", 
         user_id=current_user.id, 
         top_k=10, 
