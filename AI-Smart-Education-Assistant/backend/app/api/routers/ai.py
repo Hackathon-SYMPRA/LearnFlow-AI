@@ -10,6 +10,7 @@ from app.services.ai.document_processor import document_processor
 from app.services.ai.chunking import chunker
 from app.services.ai.rag_service import rag_service
 from app.services.ai.generator import ai_generator
+from app.services.ai.agent_parser import agent_parser
 
 router = APIRouter()
 
@@ -35,6 +36,7 @@ class GenerateNotesRequest(BaseModel):
 class TeacherChatRequest(BaseModel):
     query: str
     mode: str = "Beginner"
+    language: str = "English"
     chat_history: Optional[List[ChatMessage]] = None
 
 class GenerateQuizRequest(BaseModel):
@@ -51,6 +53,10 @@ class GenerateStudyPlanRequest(BaseModel):
     topics: str
     days: int
     hours_per_day: int
+
+class AgentIntentRequest(BaseModel):
+    transcript: str
+    current_page: str
 
 import logging
 logger = logging.getLogger(__name__)
@@ -229,7 +235,7 @@ async def chat_teacher(
     
     history_dicts = [msg.model_dump() for msg in request.chat_history] if request.chat_history else None
     
-    response_text = await ai_generator.generate_teacher_response(request.query, context_chunks, request.mode, history_dicts)
+    response_text = await ai_generator.generate_teacher_response(request.query, context_chunks, request.mode, history_dicts, request.language)
     return SuccessResponse(message="Teacher response generated successfully", data={"response": response_text})
 
 class MockTestRequest(BaseModel):
@@ -268,3 +274,13 @@ async def evaluate_mock_test_answer(
     
     evaluation = await ai_generator.evaluate_mock_test_answer(request.user_answer, context_chunks, request.language, history_dicts)
     return SuccessResponse(message="Answer evaluated successfully", data={"response": evaluation})
+
+@router.post("/agent/intent", response_model=SuccessResponse)
+async def get_agent_intent(
+    request: AgentIntentRequest
+):
+    logger.info(f"Received agent intent request: {request.model_dump()}")
+    # Parse the voice intent using the LLM agent
+    intent_data = await agent_parser.parse_intent(request.transcript, request.current_page)
+    logger.info(f"Agent intent response: {intent_data}")
+    return SuccessResponse(message="Intent parsed successfully", data=intent_data)

@@ -293,24 +293,7 @@ export const SettingsPage = () => {
         description="Language and region settings"
       >
         <ul className="space-y-3">
-          <li className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-            <div>
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Language
-              </p>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Interface and AI response language
-              </p>
-            </div>
-            <select className="input-base w-44 h-9 text-xs">
-              <option selected>English</option>
-              <option>Español</option>
-              <option>Français</option>
-              <option>Deutsch</option>
-              <option>हिन्दी</option>
-              <option>中文</option>
-            </select>
-          </li>
+
           <li className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
             <div>
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">

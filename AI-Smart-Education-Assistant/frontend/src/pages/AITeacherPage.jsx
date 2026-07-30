@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { aiService, documentService, chatService } from "@/services";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSympraVoice } from "@/contexts/SympraVoiceContext";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { generateId } from "@/utils/format";
 
 export const AITeacherPage = () => {
@@ -13,8 +16,8 @@ export const AITeacherPage = () => {
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [documents, setDocuments] = useState([]);
+  const [isDocumentsLoaded, setIsDocumentsLoaded] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState("");
-  const [language, setLanguage] = useState("Marathi");
   
   const [isMockTestActive, setIsMockTestActive] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState(sessionId || null);
@@ -23,14 +26,28 @@ export const AITeacherPage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState("");
   
-  const recognitionRef = useRef(null);
+  const [isDocumentsLoaded, setIsDocumentsLoaded] = useState(false);
+  const { currentTask, completeTask, speak, setIsAssistantActive } = useSympraVoice();
+  const taskHandledRef = React.useRef(null);
   
+  const recognitionRef = useRef(null);
   useEffect(() => {
     fetchDocuments();
     if (sessionId) {
       loadSession(sessionId);
     }
-  }, [sessionId]);
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+    
+    // Cleanup: re-enable global assistant when leaving the mock test page
+    return () => {
+      if (setIsAssistantActive) setIsAssistantActive(true);
+    };
+  }, [sessionId, setIsAssistantActive]);
 
   const loadSession = async (id) => {
     try {
@@ -54,19 +71,48 @@ export const AITeacherPage = () => {
       if (res.data && res.data.length > 0) {
         setSelectedDoc(res.data[0].id);
       }
+      setIsDocumentsLoaded(true);
     } catch (error) {
       toast.error("Failed to fetch documents");
+      setIsDocumentsLoaded(true);
     }
   };
+
+  // Autonomous task execution
+  useEffect(() => {
+    if (currentTask && currentTask.intent === 'AI_TEACHER_TEST' && isDocumentsLoaded) {
+      if (taskHandledRef.current === currentTask.timestamp) return;
+      taskHandledRef.current = currentTask.timestamp;
+
+      const { source } = currentTask.parameters;
+      if (!selectedDoc && documents.length > 0) {
+        setSelectedDoc(documents[0].id || documents[0]._id);
+      }
+      setTimeout(() => {
+        startMockTest();
+        completeTask();
+      }, 500);
+    }
+  }, [currentTask, documents, selectedDoc, isDocumentsLoaded]);
 
   const speakText = (text, langStr) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
+      // Clean markdown symbols to prevent TTS from reading "asterisk"
+      const cleanText = text ? text.replace(/[*_~`#]/g, '').trim() : "";
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      let targetLang = "en-IN";
+      utterance.lang = targetLang;
       
-      if (langStr === "Marathi") utterance.lang = "mr-IN";
-      else if (langStr === "Hindi") utterance.lang = "hi-IN";
-      else utterance.lang = "en-US";
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        let voice = voices.find(v => v.lang.includes(targetLang) && v.name.includes('Google'));
+        if (!voice) voice = voices.find(v => v.lang.includes(targetLang));
+        if (voice) {
+           utterance.voice = voice;
+           utterance.lang = voice.lang;
+        }
+      }
       
       window.speechSynthesis.speak(utterance);
     }
@@ -101,7 +147,7 @@ export const AITeacherPage = () => {
     }
 
     try {
-      const res = await aiService.generateMockTestQuestion(selectedDoc, language, []);
+      const res = await aiService.generateMockTestQuestion(selectedDoc, "English", []);
       const question = res.data?.response || "Let's start. Please tell me about the main concepts.";
       
       const newMsgs = [{
@@ -116,7 +162,7 @@ export const AITeacherPage = () => {
         await chatService.updateSession(dbSessionId, { messages: newMsgs }).catch(console.error);
       }
       
-      speakText(question, language);
+      speakText(question, "English");
     } catch (error) {
       toast.error("Failed to start mock test");
       setIsMockTestActive(false);
@@ -134,6 +180,8 @@ export const AITeacherPage = () => {
 
   const startRecording = useCallback(() => {
     try {
+      if (setIsAssistantActive) setIsAssistantActive(false);
+      
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) {
         toast.error("Voice recognition not supported in your browser.");
@@ -143,10 +191,7 @@ export const AITeacherPage = () => {
       const recognition = new SR();
       recognition.continuous = false;
       recognition.interimResults = true;
-      
-      if (language === "Marathi") recognition.lang = "mr-IN";
-      else if (language === "Hindi") recognition.lang = "hi-IN";
-      else recognition.lang = "en-US";
+      recognition.lang = "en-US";
 
       recognition.onstart = () => {
         setIsRecording(true);
@@ -189,7 +234,7 @@ export const AITeacherPage = () => {
     } catch (err) {
       toast.error("Could not start recording.");
     }
-  }, [language, selectedDoc, messages]);
+  }, [selectedDoc, messages, setIsAssistantActive]);
 
   const stopRecording = () => {
     if (recognitionRef.current) {
@@ -212,7 +257,7 @@ export const AITeacherPage = () => {
       // Prepare history for context
       const history = newMessages.map(m => ({ role: m.role, content: m.content }));
       
-      const res = await aiService.evaluateMockTestAnswer(selectedDoc, language, answer, history);
+      const res = await aiService.evaluateMockTestAnswer(selectedDoc, "English", answer, history);
       const evaluation = res.data?.response || "Thank you for your answer.";
       
       const aiMsg = {
@@ -223,7 +268,7 @@ export const AITeacherPage = () => {
       
       const finalMsgs = [...newMessages, aiMsg];
       setMessages(finalMsgs);
-      speakText(evaluation, language);
+      speakText(evaluation, "English");
       
       if (currentSessionId && !currentSessionId.startsWith("sess-")) {
         await chatService.updateSession(currentSessionId, { messages: finalMsgs }).catch(console.error);
@@ -268,20 +313,6 @@ export const AITeacherPage = () => {
               ))}
             </select>
           </div>
-          
-          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
-            <Globe className="h-4 w-4 text-slate-500" />
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              disabled={isMockTestActive}
-              className="bg-transparent text-sm text-slate-700 dark:text-slate-200 outline-none w-24"
-            >
-              <option value="Marathi">Marathi</option>
-              <option value="Hindi">Hindi</option>
-              <option value="English">English</option>
-            </select>
-          </div>
 
           {!isMockTestActive ? (
             <button
@@ -308,7 +339,7 @@ export const AITeacherPage = () => {
           <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
             <GraduationCap className="h-16 w-16 text-slate-400 mb-4" />
             <h2 className="text-xl font-medium text-slate-600 dark:text-slate-300">Ready for an Oral Exam?</h2>
-            <p className="text-sm text-slate-500 mt-2 max-w-sm">Select a document and language above, then click Start Test. The AI will ask you questions using voice, and you must answer using your microphone.</p>
+            <p className="text-sm text-slate-500 mt-2 max-w-sm">Select a document above, then click Start Test. The AI will ask you questions using voice, and you must answer using your microphone.</p>
           </div>
         ) : (
           <AnimatePresence initial={false}>
@@ -325,8 +356,14 @@ export const AITeacherPage = () => {
                   </div>
                   
                   <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div className={`rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-primary-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 rounded-tl-none'}`}>
-                      {msg.content}
+                    <div className={`rounded-2xl px-5 py-3.5 text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? 'bg-primary-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 rounded-tl-none prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1'}`}>
+                      {msg.role === 'user' ? (
+                        msg.content
+                      ) : (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      )}
                     </div>
                   </div>
                 </div>

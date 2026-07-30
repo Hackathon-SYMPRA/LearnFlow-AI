@@ -119,7 +119,9 @@ const FloatingAICompanion = () => {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [spokenText, setSpokenText] = useState("");
-  const [hasGreeted, setHasGreeted] = useState(false);
+  const [hasGreeted, setHasGreeted] = useState(() => {
+    return sessionStorage.getItem("learnflow_greeted") === "true";
+  });
   const navigate = useNavigate();
   const { user } = useAuth();
   
@@ -151,6 +153,7 @@ const FloatingAICompanion = () => {
   const handleInteraction = () => {
     if (!hasGreeted && voiceEnabled && synth) {
       setHasGreeted(true);
+      sessionStorage.setItem("learnflow_greeted", "true");
       const hours = new Date().getHours();
       let timeGreeting = "Welcome back";
       if (hours < 12) timeGreeting = "Good morning";
@@ -185,7 +188,7 @@ const FloatingAICompanion = () => {
   }, [hasGreeted, voiceEnabled, user]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+    <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-4">
       {/* Animated Speech Bubble */}
       <AnimatePresence>
         {spokenText && (
@@ -193,12 +196,12 @@ const FloatingAICompanion = () => {
             initial={{ opacity: 0, y: 10, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.9 }}
-            className="absolute bottom-24 right-4 bg-surface-glass backdrop-blur-xl border border-cyber-500/30 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.2)] p-3 w-64 origin-bottom-right"
+            className="absolute bottom-24 left-4 bg-surface-glass backdrop-blur-xl border border-cyber-500/30 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.2)] p-3 w-64 origin-bottom-left"
           >
              <p className="text-xs text-cyber-50 font-medium leading-relaxed italic">
                 "{spokenText}"
              </p>
-             <div className="absolute -bottom-2 right-6 w-4 h-4 bg-surface-glass border-b border-r border-cyber-500/30 rotate-45 transform" />
+             <div className="absolute -bottom-2 left-6 w-4 h-4 bg-surface-glass border-b border-r border-cyber-500/30 rotate-45 transform" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -209,7 +212,7 @@ const FloatingAICompanion = () => {
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className="bg-surface-glass backdrop-blur-xl border border-electric-500/30 rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.15)] p-4 w-72 origin-bottom-right mb-16"
+            className="bg-surface-glass backdrop-blur-xl border border-electric-500/30 rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.15)] p-4 w-72 origin-bottom-left mb-16"
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -245,7 +248,7 @@ const FloatingAICompanion = () => {
       </AnimatePresence>
 
       {/* Companion and Controls Container */}
-      <div className="relative flex items-end justify-end">
+      <div className="relative flex items-end justify-start">
         {/* Voice Toggle */}
         <button
           onClick={() => {
@@ -253,7 +256,7 @@ const FloatingAICompanion = () => {
             setVoiceEnabled(!voiceEnabled);
           }}
           className={cn(
-            "absolute -left-12 bottom-6 p-2 rounded-full backdrop-blur-md border transition-all z-10 shadow-lg",
+            "absolute -right-12 bottom-6 p-2 rounded-full backdrop-blur-md border transition-all z-10 shadow-lg",
             voiceEnabled 
               ? "bg-electric-500/20 border-electric-500/30 text-electric-400 hover:bg-electric-500/30" 
               : "bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-700"

@@ -20,6 +20,17 @@ class AIGenerator:
             context_str += f"--- Source {i+1} (Doc: {doc_id}) ---\n{content}\n\n"
         return context_str
 
+    def _get_language_instruction(self, language: str) -> str:
+        if not language or language.lower() == "english":
+            return "Please respond entirely in English."
+            
+        return f"""
+        CRITICAL INSTRUCTION: You MUST respond ONLY in {language}, using its native script (e.g., Devanagari for Marathi/Hindi). 
+        Do NOT respond in English or any other language under any circumstance.
+        Even if the user's question contains English words or technical terms — transliterate or translate technical terms into {language} where natural, otherwise keep the exact term but write the surrounding sentence entirely in {language}.
+        If you fail to write the response in {language}, it is a critical failure.
+        """
+
     async def generate_chat_response(
         self, 
         query: str, 
@@ -38,7 +49,8 @@ class AIGenerator:
         If the student asks to explain or summarize the selected document(s), use your general knowledge about the document's topic along with any provided context to explain it.
         If the context is empty, missing, or irrelevant to the question, act as a helpful AI assistant and answer the question directly using your general knowledge. Do NOT complain about missing context.
         Always cite the source document name if you do use context.
-        Please respond entirely in the {language} language.
+        
+        {self._get_language_instruction(language)}
 
         Context:
         {context_str}
@@ -56,6 +68,8 @@ class AIGenerator:
 
         if images and len(images) > 0:
             content = [{"type": "text", "text": query}]
+            if language and language.lower() != "english":
+                content[0]["text"] += f"\n\n[CRITICAL REMINDER: You MUST respond ENTIRELY in {language} in Devanagari script. Do NOT use English sentences.]"
             for img_b64 in images:
                 if "," in img_b64:
                     img_b64 = img_b64.split(",")[1]
@@ -68,7 +82,10 @@ class AIGenerator:
             messages.append({"role": "user", "content": content})
             model_to_use = self.vision_model
         else:
-            messages.append({"role": "user", "content": query})
+            final_query = query
+            if language and language.lower() != "english":
+                final_query += f"\n\n[CRITICAL REMINDER: You MUST respond ENTIRELY in {language} in Devanagari script. Do NOT use English sentences.]"
+            messages.append({"role": "user", "content": final_query})
             model_to_use = self.text_model
         
         response = await self.client.chat.completions.create(
@@ -97,7 +114,8 @@ class AIGenerator:
         If the student asks to explain or summarize the selected document(s), use your general knowledge about the document's topic along with any provided context to explain it.
         If the context is empty, missing, or irrelevant to the question, act as a helpful AI assistant and answer the question directly using your general knowledge. Do NOT complain about missing context.
         Always cite the source document name if you do use context.
-        Please respond entirely in the {language} language.
+        
+        {self._get_language_instruction(language)}
 
         Context:
         {context_str}
@@ -115,6 +133,8 @@ class AIGenerator:
 
         if images and len(images) > 0:
             content = [{"type": "text", "text": query}]
+            if language and language.lower() != "english":
+                content[0]["text"] += f"\n\n[CRITICAL REMINDER: You MUST respond ENTIRELY in {language} in Devanagari script. Do NOT use English sentences.]"
             for img_b64 in images:
                 if "," in img_b64:
                     img_b64 = img_b64.split(",")[1]
@@ -127,7 +147,10 @@ class AIGenerator:
             messages.append({"role": "user", "content": content})
             model_to_use = self.vision_model
         else:
-            messages.append({"role": "user", "content": query})
+            final_query = query
+            if language and language.lower() != "english":
+                final_query += f"\n\n[CRITICAL REMINDER: You MUST respond ENTIRELY in {language} in Devanagari script. Do NOT use English sentences.]"
+            messages.append({"role": "user", "content": final_query})
             model_to_use = self.text_model
         
         stream = await self.client.chat.completions.create(
@@ -261,7 +284,7 @@ class AIGenerator:
         return response.choices[0].message.content
 
 
-    async def generate_teacher_response(self, query: str, context_chunks: List[Dict], mode: str = "Beginner", chat_history: List[Dict] = None) -> str:
+    async def generate_teacher_response(self, query: str, context_chunks: List[Dict], mode: str = "Beginner", chat_history: List[Dict] = None, language: str = "English") -> str:
         context_str = self._build_context_string(context_chunks)
         
         mode_instruction = ""
@@ -276,6 +299,8 @@ class AIGenerator:
         You are an expert Teacher. {mode_instruction}
         Use the following extracted context from study materials to answer the student's question.
         If the answer is not in the context, inform the student gently, but provide a helpful answer mentioning uncertainty.
+
+        {self._get_language_instruction(language)}
 
         Context:
         {context_str}
@@ -307,7 +332,8 @@ class AIGenerator:
         Based on the provided context from the student's study material, ask ONE conceptual question.
         Make the question clear, engaging, and suitable for an oral exam.
         Do not provide the answer. Just ask the question.
-        You MUST speak entirely in the {language} language.
+        
+        {self._get_language_instruction(language)}
 
         Context:
         {context_str}
@@ -317,8 +343,13 @@ class AIGenerator:
         if history:
             for msg in history:
                 messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
+            if language and language.lower() != "english" and messages[-1]["role"] == "user":
+                messages[-1]["content"] += f"\n\n[CRITICAL REMINDER: You MUST respond ENTIRELY in {language} in Devanagari script. Do NOT use English sentences.]"
         else:
-            messages.append({"role": "user", "content": "Start the mock test and ask me the first question."})
+            msg_content = "Start the mock test and ask me the first question."
+            if language and language.lower() != "english":
+                msg_content += f"\n\n[CRITICAL REMINDER: You MUST respond ENTIRELY in {language} in Devanagari script. Do NOT use English sentences.]"
+            messages.append({"role": "user", "content": msg_content})
 
         response = await self.client.chat.completions.create(
             model=self.text_model,
@@ -339,7 +370,7 @@ class AIGenerator:
         3. Tell them how well they understood the concept.
         4. End your response by asking the NEXT relevant question from the context to continue the mock test.
         
-        You MUST speak entirely in the {language} language.
+        {self._get_language_instruction(language)}
 
         Context:
         {context_str}
@@ -350,7 +381,10 @@ class AIGenerator:
             for msg in history:
                 messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
                 
-        messages.append({"role": "user", "content": user_answer})
+        user_msg = user_answer
+        if language and language.lower() != "english":
+            user_msg += f"\n\n[CRITICAL REMINDER: You MUST respond ENTIRELY in {language} in Devanagari script. Do NOT use English sentences.]"
+        messages.append({"role": "user", "content": user_msg})
 
         response = await self.client.chat.completions.create(
             model=self.text_model,

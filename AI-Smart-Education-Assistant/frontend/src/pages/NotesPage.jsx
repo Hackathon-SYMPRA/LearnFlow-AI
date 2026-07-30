@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCopyToClipboard } from "@/hooks";
 import { documentService, aiService } from "@/services";
+import { useSympraVoice } from "@/contexts/SympraVoiceContext";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // Removed MOCK_DOCS
 
@@ -42,6 +45,10 @@ export const NotesPage = () => {
   const [selectedType, setSelectedType] = useState("detailed");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedNote, setGeneratedNote] = useState("");
+  const [isDocumentsLoaded, setIsDocumentsLoaded] = useState(false);
+  const { theme } = useTheme();
+  const { currentTask, completeTask, speak } = useSympraVoice();
+  const taskHandledRef = React.useRef(null);
   const { copy, copied } = useCopyToClipboard();
 
   React.useEffect(() => {
@@ -56,16 +63,31 @@ export const NotesPage = () => {
       } else {
         setDocuments([]);
       }
-    }).catch(console.error);
+      setIsDocumentsLoaded(true);
+    }).catch(err => {
+      console.error(err);
+      setIsDocumentsLoaded(true);
+    });
   }, []);
 
-  const handleGenerate = async () => {
-    if (generationMode === "document" && !selectedDoc) {
+  const handleGenerate = async (overrideDocId = null, overrideTopic = null) => {
+    const activeDoc = overrideDocId || selectedDoc;
+    const activeTopic = overrideTopic || topicInput;
+
+    if (generationMode === "document" && !activeDoc) {
       toast.error("Please select a document first");
+      if (currentTask && currentTask.intent === 'GENERATE_NOTES') {
+        speak("Please select a document first");
+        completeTask();
+      }
       return;
     }
-    if (generationMode === "topic" && !topicInput.trim()) {
+    if (generationMode === "topic" && !activeTopic.trim()) {
       toast.error("Please enter a topic first");
+      if (currentTask && currentTask.intent === 'GENERATE_NOTES') {
+        speak("Please enter a topic first");
+        completeTask();
+      }
       return;
     }
     
@@ -74,19 +96,55 @@ export const NotesPage = () => {
     
     try {
       const payload = {
-        document_id: generationMode === "document" ? selectedDoc : null,
-        topic: generationMode === "topic" ? topicInput.trim() : null,
+        document_id: generationMode === "document" ? activeDoc : null,
+        topic: generationMode === "topic" ? activeTopic.trim() : null,
         note_type: NOTE_TYPES.find(t => t.id === selectedType)?.label || "Summary Notes"
       };
       const response = await aiService.generateNotes(payload);
       setGeneratedNote(response.data?.notes || "No notes generated.");
       toast.success("Notes generated successfully!");
+      if (currentTask && currentTask.intent === 'GENERATE_NOTES') {
+        speak("Your notes are ready.");
+      }
     } catch (err) {
       toast.error("Failed to generate notes: " + (err.response?.data?.message || err.message));
+      if (currentTask && currentTask.intent === 'GENERATE_NOTES') {
+        speak("Sorry, I failed to generate notes.");
+      }
     } finally {
       setIsGenerating(false);
+      if (currentTask && currentTask.intent === 'GENERATE_NOTES') {
+        completeTask();
+      }
     }
   };
+
+  // Autonomous task execution
+  React.useEffect(() => {
+    if (currentTask && currentTask.intent === 'GENERATE_NOTES' && isDocumentsLoaded) {
+      if (taskHandledRef.current === currentTask.timestamp) return;
+      taskHandledRef.current = currentTask.timestamp;
+      
+      const { source, topic_name } = currentTask.parameters;
+      if (source === 'topic' && topic_name) {
+        setGenerationMode('topic');
+        setTopicInput(topic_name);
+        setTimeout(() => {
+          handleGenerate(null, topic_name);
+        }, 500);
+      } else if (source === 'document' || source === 'selected_document' || !source) {
+        setGenerationMode('document');
+        let docToUse = selectedDoc;
+        if (!selectedDoc && documents.length > 0) {
+           docToUse = documents[0].id || documents[0]._id;
+           setSelectedDoc(docToUse);
+        }
+        setTimeout(() => {
+          handleGenerate(docToUse, null);
+        }, 500);
+      }
+    }
+  }, [currentTask, documents, selectedDoc, isDocumentsLoaded]);
 
   const handleCopy = () => {
     if (!generatedNote) return;
@@ -200,7 +258,7 @@ export const NotesPage = () => {
 
           <div className="mt-auto pt-4">
             <button
-              onClick={handleGenerate}
+              onClick={() => handleGenerate()}
               disabled={isGenerating}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 py-3 px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
@@ -263,11 +321,11 @@ export const NotesPage = () => {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-8">
-                  {/* Basic Markdown Rendering (Simulation) */}
+                  {/* Markdown Rendering */}
                   <div className="prose prose-slate dark:prose-invert max-w-none">
-                     <pre className="whitespace-pre-wrap font-sans text-slate-700 dark:text-slate-300 bg-transparent border-0 p-0 m-0 text-base leading-relaxed">
+                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {generatedNote}
-                     </pre>
+                     </ReactMarkdown>
                   </div>
                 </div>
               </motion.div>

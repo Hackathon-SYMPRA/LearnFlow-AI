@@ -15,6 +15,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import * as htmlToImage from "html-to-image";
 import { documentService, aiService } from "../services";
+import { useSympraVoice } from "@/contexts/SympraVoiceContext";
 
 export const MindMapPage = () => {
   const [documents, setDocuments] = useState([]);
@@ -27,6 +28,9 @@ export const MindMapPage = () => {
   const reactFlowWrapper = useRef(null);
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
+  const [isDocumentsLoaded, setIsDocumentsLoaded] = useState(false);
+  const { currentTask, completeTask, speak } = useSympraVoice();
+  const taskHandledRef = React.useRef(null);
 
   useEffect(() => {
     const fetchDocs = async () => {
@@ -42,15 +46,40 @@ export const MindMapPage = () => {
         } else {
           setDocuments([]);
         }
+        setIsDocumentsLoaded(true);
       } catch (err) {
         toast.error("Failed to load documents");
+        setIsDocumentsLoaded(true);
       }
     };
     fetchDocs();
   }, []);
 
-  const handleGenerate = async () => {
-    if (!selectedDoc) {
+  // Autonomous task execution
+  React.useEffect(() => {
+    if (currentTask && currentTask.intent === 'GENERATE_MINDMAP' && isDocumentsLoaded) {
+      if (taskHandledRef.current === currentTask.timestamp) return;
+      taskHandledRef.current = currentTask.timestamp;
+
+      const { source, topic_name } = currentTask.parameters;
+      
+      if (!selectedDoc && documents.length > 0) {
+        const docToUse = documents[0].id || documents[0]._id;
+        setSelectedDoc(docToUse);
+        setTimeout(() => {
+          handleGenerate(docToUse);
+        }, 500);
+      } else if (selectedDoc) {
+        setTimeout(() => {
+          handleGenerate(selectedDoc);
+        }, 500);
+      }
+    }
+  }, [currentTask, documents, selectedDoc, isDocumentsLoaded]);
+
+  const handleGenerate = async (overrideDocId = null) => {
+    const activeDoc = overrideDocId || selectedDoc;
+    if (!activeDoc) {
       toast.error("Please select a document first");
       return;
     }
@@ -59,7 +88,7 @@ export const MindMapPage = () => {
     setIsGenerated(false);
     
     try {
-      const response = await aiService.generateMindMap(selectedDoc);
+      const response = await aiService.generateMindMap(activeDoc);
       let data = response.data?.mindmap || response.data;
       if (typeof data === "string") {
         try {
@@ -81,6 +110,9 @@ export const MindMapPage = () => {
       toast.error(err.response?.data?.message || "Failed to generate mind map");
     } finally {
       setIsGenerating(false);
+      if (currentTask && currentTask.intent === 'GENERATE_MINDMAP') {
+        completeTask();
+      }
     }
   };
 
@@ -154,7 +186,7 @@ export const MindMapPage = () => {
 
           <div className="mt-auto pt-4">
             <button
-              onClick={handleGenerate}
+              onClick={() => handleGenerate()}
               disabled={isGenerating}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 py-3 px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >

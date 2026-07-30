@@ -14,6 +14,7 @@ import { ROUTES } from "@/constants";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
 import { flashcardService, documentService } from "../services";
+import { useSympraVoice } from "@/contexts/SympraVoiceContext";
 
 const FlashcardItem = ({ card }) => {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -90,14 +91,19 @@ export const FlashcardsPage = () => {
   const [selectedDoc, setSelectedDoc] = useState("");
   const [flashcards, setFlashcards] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDocumentsLoaded, setIsDocumentsLoaded] = useState(false);
+  const { currentTask, completeTask, speak } = useSympraVoice();
+  const taskHandledRef = React.useRef(null);
 
   useEffect(() => {
     const fetchDocs = async () => {
       try {
         const response = await documentService.list();
         setDocuments(response.data || []);
+        setIsDocumentsLoaded(true);
       } catch (err) {
         toast.error("Failed to load documents");
+        setIsDocumentsLoaded(true);
       }
     };
     fetchDocs();
@@ -113,15 +119,40 @@ export const FlashcardsPage = () => {
       if (data && Array.isArray(data)) {
         setFlashcards(data);
         toast.success("Flashcards generated successfully!");
+        if (currentTask && currentTask.intent === 'GENERATE_FLASHCARDS') {
+          speak("Your flashcards are ready to review.");
+        }
       } else {
         toast.error("Failed to parse flashcards data");
       }
     } catch (err) {
       toast.error(err.response?.data?.detail || err.response?.data?.message || "Failed to generate flashcards");
+      if (currentTask && currentTask.intent === 'GENERATE_FLASHCARDS') {
+        speak("Sorry, I failed to generate flashcards.");
+      }
     } finally {
       setIsGenerating(false);
+      if (currentTask && currentTask.intent === 'GENERATE_FLASHCARDS') {
+        completeTask();
+      }
     }
   };
+
+  // Autonomous task execution
+  React.useEffect(() => {
+    if (currentTask && currentTask.intent === 'GENERATE_FLASHCARDS' && isDocumentsLoaded) {
+      if (taskHandledRef.current === currentTask.timestamp) return;
+      taskHandledRef.current = currentTask.timestamp;
+      
+      const { source, topic_name } = currentTask.parameters;
+      if (!selectedDoc && documents.length > 0) {
+        setSelectedDoc(documents[0].id || documents[0]._id);
+      }
+      setTimeout(() => {
+        handleGenerate();
+      }, 500);
+    }
+  }, [currentTask, documents, selectedDoc, isDocumentsLoaded]);
 
   return (
     <motion.div

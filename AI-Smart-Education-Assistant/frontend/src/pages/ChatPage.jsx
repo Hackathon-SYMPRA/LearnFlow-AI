@@ -45,6 +45,7 @@ import {
 import { chatService, documentService } from "@/services";
 import { ROUTES, SUBJECT_COLORS } from "@/constants";
 import { useIsMobile, useDebounce, useCopyToClipboard } from "@/hooks";
+import { useSympraVoice } from "@/contexts/SympraVoiceContext";
 import {
   cn,
   formatRelativeTime,
@@ -348,6 +349,7 @@ export const ChatPage = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const { copy, copied } = useCopyToClipboard();
+  const { currentTask, completeTask, speak } = useSympraVoice();
 
   const [sessions, setSessions] = useState([]);
   const [currentSession, setCurrentSession] = useState(null);
@@ -393,7 +395,6 @@ export const ChatPage = () => {
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 200);
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
 
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -775,7 +776,7 @@ export const ChatPage = () => {
         chatService.streamMessage(
           session.id,
           text,
-          { language: selectedLanguage, images: base64Images },
+          { language: "English", images: base64Images },
           (chunk) => {
              if (stopped) return;
              setProcStep(3); // done thinking
@@ -814,7 +815,7 @@ export const ChatPage = () => {
         console.error(e);
       }
     },
-    [currentSession, isStreaming, navigate, selectedLanguage],
+    [currentSession, isStreaming, navigate],
   );
 
   const handleStop = useCallback(() => {
@@ -1248,15 +1249,6 @@ export const ChatPage = () => {
                     {doc.original_name || doc.file_name}
                   </option>
                 ))}
-              </select>
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                className="ml-2 text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-md px-2 py-1 outline-none text-slate-700 dark:text-slate-300 cursor-pointer"
-              >
-                <option value="English">English</option>
-                <option value="Marathi">Marathi</option>
-                <option value="Hindi">Hindi</option>
               </select>
             </div>
             <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">

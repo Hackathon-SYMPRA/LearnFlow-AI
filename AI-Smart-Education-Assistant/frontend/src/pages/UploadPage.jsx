@@ -447,26 +447,26 @@ export const UploadPage = () => {
     if (toStart.length === 0 || runningCount >= MAX_UPLOAD_PARALLEL) return;
 
     const availableSlots = MAX_UPLOAD_PARALLEL - runningCount;
-    toStart.slice(0, availableSlots).forEach((job) => startJob(job.id));
+    toStart.slice(0, availableSlots).forEach((job) => {
+      // Prevent React StrictMode double execution by mutating the local object status
+      job.status = "uploading";
+      startJob(job);
+    });
   }, [jobs, runningCount]);
 
-  const startJob = useCallback((jobId) => {
+  const startJob = useCallback((job) => {
     setJobs((prev) =>
       prev.map((j) =>
-        j.id === jobId ? { ...j, status: "uploading", progress: 0 } : j,
+        j.id === job.id ? { ...j, status: "uploading", progress: 0 } : j,
       ),
     );
 
-    setJobs((prev) => {
-      const job = prev.find((j) => j.id === jobId);
-      if (!job || !job.file || job.status !== "uploading") return prev;
-
-      documentService
-        .upload(job.file, job.subject, (progress) => {
-          setJobs((pj) =>
-            pj.map((j) => (j.id === jobId ? { ...j, progress } : j)),
-          );
-        })
+    documentService
+      .upload(job.file, job.subject, (progress) => {
+        setJobs((pj) =>
+          pj.map((j) => (j.id === job.id ? { ...j, progress } : j)),
+        );
+      })
         .then((res) => {
           const d = res.data;
           const newDoc = {
@@ -481,7 +481,7 @@ export const UploadPage = () => {
           toast.success(`${job.fileName} uploaded successfully`);
           setJobs((pj) =>
             pj.map((j) =>
-              j.id === jobId ? { ...j, status: "done", progress: 100 } : j,
+              j.id === job.id ? { ...j, status: "done", progress: 100 } : j,
             ),
           );
         })
@@ -489,15 +489,12 @@ export const UploadPage = () => {
           toast.error(`Upload failed: ${err.message}`);
           setJobs((pj) =>
             pj.map((j) =>
-              j.id === jobId
+              j.id === job.id
                 ? { ...j, status: "failed", progress: 0, error: err.message }
                 : j,
             ),
           );
         });
-
-      return prev;
-    });
   }, []);
 
   const removeJob = useCallback((jobId) => {

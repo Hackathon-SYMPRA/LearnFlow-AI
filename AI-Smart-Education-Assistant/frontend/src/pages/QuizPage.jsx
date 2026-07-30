@@ -39,6 +39,7 @@ import {
 import { SUBJECTS, SUBJECT_COLORS } from "@/constants";
 import { generateQuizSchema } from "@/utils/validation";
 import { documentService, quizService } from "@/services";
+import { useSympraVoice } from "@/contexts/SympraVoiceContext";
 import { Button } from "@/components/ui/Button";
 import {
   Card,
@@ -368,6 +369,9 @@ export const QuizPage = () => {
   ]);
   const [documents, setDocuments] = useState([]);
   const [searchedDoc, setSearchedDoc] = useState("");
+  const [isDocumentsLoaded, setIsDocumentsLoaded] = useState(false);
+  const { currentTask, completeTask, speak } = useSympraVoice();
+  const taskHandledRef = React.useRef(null);
 
   useEffect(() => {
     const fetchDocs = async () => {
@@ -381,8 +385,10 @@ export const QuizPage = () => {
           type: doc.file_type || "pdf"
         }));
         setDocuments(mappedDocs);
+        setIsDocumentsLoaded(true);
       } catch (err) {
         toast.error("Failed to load documents");
+        setIsDocumentsLoaded(true);
       }
     };
     fetchDocs();
@@ -470,12 +476,45 @@ export const QuizPage = () => {
       setIsGenerating(false);
       setState("quiz");
       toast.success("Quiz generated successfully!");
+      if (currentTask && currentTask.intent === 'GENERATE_QUIZ') {
+        speak("Your quiz is ready. Good luck!");
+      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to generate quiz. Please try again.");
       setIsGenerating(false);
+      if (currentTask && currentTask.intent === 'GENERATE_QUIZ') {
+        speak("Sorry, I failed to generate the quiz.");
+      }
+    } finally {
+      if (currentTask && currentTask.intent === 'GENERATE_QUIZ') {
+        completeTask();
+      }
     }
   };
+
+  // Autonomous task execution
+  React.useEffect(() => {
+    if (currentTask && currentTask.intent === 'GENERATE_QUIZ' && isDocumentsLoaded) {
+      if (taskHandledRef.current === currentTask.timestamp) return;
+      taskHandledRef.current = currentTask.timestamp;
+
+      const { source, topic_name } = currentTask.parameters;
+      const docId = documents.length > 0 ? (documents[0].id || documents[0]._id) : null;
+      
+      const config = {
+        documentIds: docId ? [docId] : [],
+        difficulty: "medium",
+        questionCount: 5,
+        topic: topic_name || "",
+        examMode: false,
+      };
+
+      setTimeout(() => {
+        runGenerationSteps(config);
+      }, 500);
+    }
+  }, [currentTask, documents, isDocumentsLoaded]);
 
   const {
     register,

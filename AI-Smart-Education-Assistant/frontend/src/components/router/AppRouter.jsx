@@ -163,6 +163,7 @@ export const AppRouter = () => {
         theme={theme === "dark" ? "dark" : "light"}
         richColors
         closeButton
+        duration={2500}
         toastOptions={{
           style: {
             borderRadius: "0.75rem",
