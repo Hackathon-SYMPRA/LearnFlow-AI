@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '@/constants';
 import 'regenerator-runtime/runtime';
@@ -10,13 +9,10 @@ const SympraVoiceContext = createContext();
 export const useSympraVoice = () => useContext(SympraVoiceContext);
 
 export const SympraVoiceProvider = ({ children }) => {
-  const {
-    transcript,
-    listening,
-    resetTranscript,
-    browserSupportsSpeechRecognition,
-    isMicrophoneAvailable
-  } = useSpeechRecognition();
+  const [transcript, setTranscript] = useState('');
+  const [listening, setListening] = useState(false);
+  const [browserSupportsSpeechRecognition, setBrowserSupportsSpeechRecognition] = useState(true);
+  const [isMicrophoneAvailable, setIsMicrophoneAvailable] = useState(true);
 
   const [agentState, setAgentState] = useState('idle'); // idle, listening, processing, speaking
   const [currentTask, setCurrentTask] = useState(null); // The intent data sent to pages
@@ -26,6 +22,81 @@ export const SympraVoiceProvider = ({ children }) => {
 
   const silenceTimer = useRef(null);
   const wakeWordDetectedRef = useRef(false);
+  const recognitionRef = useRef(null);
+  const isAssistantActiveRef = useRef(isAssistantActive);
+
+  useEffect(() => {
+    isAssistantActiveRef.current = isAssistantActive;
+  }, [isAssistantActive]);
+
+  const resetTranscript = useCallback(() => {
+    setTranscript('');
+  }, []);
+
+  // Initialize Native Speech Recognition
+  useEffect(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setBrowserSupportsSpeechRecognition(false);
+      return;
+    }
+
+    const recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-IN';
+
+    recognition.onstart = () => {
+      setListening(true);
+      setIsMicrophoneAvailable(true);
+    };
+
+    recognition.onresult = (event) => {
+      let finalStr = '';
+      let interimStr = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalStr += event.results[i][0].transcript;
+        } else {
+          interimStr += event.results[i][0].transcript;
+        }
+      }
+      // If there's final string, use it. Otherwise show interim.
+      const currentTranscript = finalStr || interimStr;
+      if (currentTranscript) {
+        setTranscript(currentTranscript.trim());
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error("[SympraVoice] Native Speech Error:", event.error);
+      if (event.error === 'not-allowed') {
+        setIsMicrophoneAvailable(false);
+        setIsAssistantActive(false);
+      }
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+      // Robust auto-restart logic if it stopped but should be active
+      if (isAssistantActiveRef.current) {
+        console.log("[SympraVoice] Auto-restarting native microphone...");
+        try {
+          recognition.start();
+        } catch (e) {
+          console.error("Failed to auto-restart mic", e);
+        }
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   // Clean text from markdown symbols so speech synth doesn't say "asterisk"
   const cleanMarkdownForSpeech = (text) => {
@@ -38,12 +109,9 @@ export const SympraVoiceProvider = ({ children }) => {
     return new Promise((resolve) => {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
-
         const cleanText = cleanMarkdownForSpeech(text);
         const utterance = new SpeechSynthesisUtterance(cleanText);
-
         let targetLang = 'en-US';
-
         utterance.lang = targetLang;
 
         const voices = window.speechSynthesis.getVoices();
@@ -58,13 +126,8 @@ export const SympraVoiceProvider = ({ children }) => {
           }
         }
 
-        utterance.onend = () => {
-          resolve();
-        };
-        utterance.onerror = () => {
-          resolve(); // Resolve even on error to prevent hanging
-        };
-
+        utterance.onend = () => resolve();
+        utterance.onerror = () => resolve();
         window.speechSynthesis.speak(utterance);
       } else {
         resolve(); // Fallback if no TTS
@@ -91,27 +154,19 @@ export const SympraVoiceProvider = ({ children }) => {
         })
       });
 
-      console.log("[SympraVoice] Response status:", response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log("[SympraVoice] Received intent data:", data);
-        const intentData = data.data; // { intent, parameters, speech_reply }
+        const intentData = data.data; 
 
         setAgentState('speaking');
         await speak(intentData.speech_reply, 'en-US');
-
-        // Handle navigation and action injection based on intent
         handleIntentExecution(intentData);
       } else {
-        const errorText = await response.text();
-        console.error(`[SympraVoice] API Error ${response.status}:`, errorText);
         setAgentState('speaking');
         await speak("I'm sorry, I encountered an error connecting to my server.");
         setAgentState('idle');
       }
     } catch (error) {
-      console.error("[SympraVoice] Network or Agent error:", error);
       setAgentState('speaking');
       await speak("Sorry, something went wrong with the network.");
       setAgentState('idle');
@@ -120,40 +175,21 @@ export const SympraVoiceProvider = ({ children }) => {
 
   const handleIntentExecution = (intentData) => {
     const { intent, parameters } = intentData;
-
-    // Set the task globally so the target page can pick it up in a useEffect
     setCurrentTask(intentData);
 
-    // Route logic
     switch (intent) {
-      case 'CHAT':
-        navigate('/chat');
-        break;
-      case 'GENERATE_NOTES':
-        navigate('/notes');
-        break;
-      case 'AI_TEACHER_TEST':
-        navigate('/ai-teacher');
-        break;
-      case 'GENERATE_QUIZ':
-        navigate('/quiz');
-        break;
-      case 'GENERATE_FLASHCARDS':
-        navigate('/flashcards');
-        break;
-      case 'GENERATE_MINDMAP':
-        navigate('/mindmap');
-        break;
-      default:
-        // Do nothing for unknown
-        break;
+      case 'CHAT': navigate('/chat'); break;
+      case 'GENERATE_NOTES': navigate('/notes'); break;
+      case 'AI_TEACHER_TEST': navigate('/ai-teacher'); break;
+      case 'GENERATE_QUIZ': navigate('/quiz'); break;
+      case 'GENERATE_FLASHCARDS': navigate('/flashcards'); break;
+      case 'GENERATE_MINDMAP': navigate('/mindmap'); break;
+      default: break;
     }
-
     resetTranscript();
     setAgentState('listening');
   };
 
-  // Mark task as completed from the page
   const completeTask = useCallback(() => {
     setCurrentTask(null);
   }, []);
@@ -161,11 +197,8 @@ export const SympraVoiceProvider = ({ children }) => {
   // Monitor transcript for Wake Word and Commands
   useEffect(() => {
     if (!transcript) return;
-
     const lowerTranscript = transcript.toLowerCase();
 
-    // 1. Wake Word Detection
-    // Adding variations to handle Indian accent misinterpretations
     const wakeWords = [
       'hi sympra', 'hello sympra', 'ok sympra', 'hey sympra',
       'hi simpra', 'hello simpra', 'ok simpra', 'hey simpra',
@@ -184,7 +217,7 @@ export const SympraVoiceProvider = ({ children }) => {
     if (deactivateWords.some(w => lowerTranscript.includes(w))) {
       setIsAssistantActive(false);
       setAgentState('idle');
-      SpeechRecognition.stopListening();
+      if (recognitionRef.current) recognitionRef.current.stop();
       resetTranscript();
       speak("Assistant deactivated.", "en-US");
       return;
@@ -193,10 +226,8 @@ export const SympraVoiceProvider = ({ children }) => {
     if (agentState === 'idle' || agentState === 'speaking') {
       const matchedWord = wakeWords.find(w => lowerTranscript.includes(w));
       if (matchedWord) {
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-        }
-        // Extract any command spoken immediately after the wake word (e.g. "hi simra open notes")
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        
         const startIndex = lowerTranscript.indexOf(matchedWord) + matchedWord.length;
         const afterText = lowerTranscript.substring(startIndex).trim();
 
@@ -204,29 +235,20 @@ export const SympraVoiceProvider = ({ children }) => {
         resetTranscript();
 
         if (afterText.length > 2) {
-          // If they already said a command, skip the greeting and process it
           processCommand(afterText);
         } else {
-          // Otherwise wait for them to speak
           setAgentState('listening');
           speak("Hello, this is Sympra created by Team Sympra to help you in LearnFlow. How can I help you?")
-            .then(() => {
-              resetTranscript();
-            });
+            .then(() => resetTranscript());
         }
         return;
       }
     }
 
-    // 2. Command Detection (After Wake Word)
     if (agentState === 'listening' && wakeWordDetectedRef.current) {
-      // Clear previous timeout
       if (silenceTimer.current) clearTimeout(silenceTimer.current);
-
-      // Set new timeout for 1.5 seconds of silence
       silenceTimer.current = setTimeout(() => {
         if (transcript.trim().length > 0) {
-          // wakeWordDetectedRef remains true for continuous conversation
           setAgentState('processing');
           processCommand(transcript);
           resetTranscript();
@@ -238,25 +260,21 @@ export const SympraVoiceProvider = ({ children }) => {
   // Synchronous activation for strict browser policies
   const activateAssistant = useCallback(() => {
     setIsAssistantActive(true);
-    SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
-  }, []);
-
-  // Start listening continuously when mounted (and restart if it stops unexpectedly)
-  useEffect(() => {
-    if (!browserSupportsSpeechRecognition) {
-      console.warn("Browser doesn't support speech recognition.");
-      return;
-    }
-
-    if (isAssistantActive) {
-      if (!listening && agentState !== 'processing' && agentState !== 'speaking') {
-        console.log("[SympraVoice] Starting microphone (en-IN)");
-        SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
+    if (recognitionRef.current && !listening) {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error("Manual start failed", e);
       }
-    } else if (listening) {
-      SpeechRecognition.stopListening();
     }
-  }, [browserSupportsSpeechRecognition, listening, agentState, isAssistantActive]);
+  }, [listening]);
+
+  // Watch for deactivation manually triggered elsewhere
+  useEffect(() => {
+    if (!isAssistantActive && listening && recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+  }, [isAssistantActive, listening]);
 
   const value = {
     agentState,
