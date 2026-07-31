@@ -20,7 +20,7 @@ export const SympraVoiceProvider = ({ children }) => {
 
   const [agentState, setAgentState] = useState('idle'); // idle, listening, processing, speaking
   const [currentTask, setCurrentTask] = useState(null); // The intent data sent to pages
-  const [isAssistantActive, setIsAssistantActive] = useState(true); // Whether mic should stay on
+  const [isAssistantActive, setIsAssistantActive] = useState(false); // Start false to comply with browser policies
   const navigate = useNavigate();
   const location = useLocation();
 
