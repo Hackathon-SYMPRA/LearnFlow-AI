@@ -2,7 +2,7 @@ import React from 'react';
 import { useSympraVoice } from '../contexts/SympraVoiceContext';
 
 const SympraAssistantUI = () => {
-  const { agentState, browserSupportsSpeechRecognition, isMicrophoneAvailable, listening, transcript, isAssistantActive, setIsAssistantActive } = useSympraVoice();
+  const { agentState, browserSupportsSpeechRecognition, isMicrophoneAvailable, listening, transcript, isAssistantActive, setIsAssistantActive, activateAssistant } = useSympraVoice();
 
   if (!browserSupportsSpeechRecognition) {
     return (
@@ -30,7 +30,7 @@ const SympraAssistantUI = () => {
     return (
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
         <div 
-          onClick={() => setIsAssistantActive(true)}
+          onClick={() => activateAssistant()}
           className="flex items-center bg-gray-100 dark:bg-gray-800 shadow-lg rounded-full px-4 py-2 border border-gray-300 dark:border-gray-700 cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
         >
           <div className="w-3 h-3 rounded-full mr-3 bg-red-400"></div>

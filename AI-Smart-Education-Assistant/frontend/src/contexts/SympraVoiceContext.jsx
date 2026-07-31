@@ -235,6 +235,12 @@ export const SympraVoiceProvider = ({ children }) => {
     }
   }, [transcript, agentState, resetTranscript, speak]);
 
+  // Synchronous activation for strict browser policies
+  const activateAssistant = useCallback(() => {
+    setIsAssistantActive(true);
+    SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
+  }, []);
+
   // Start listening continuously when mounted (and restart if it stops unexpectedly)
   useEffect(() => {
     if (!browserSupportsSpeechRecognition) {
@@ -245,11 +251,7 @@ export const SympraVoiceProvider = ({ children }) => {
     if (isAssistantActive) {
       if (!listening && agentState !== 'processing' && agentState !== 'speaking') {
         console.log("[SympraVoice] Starting microphone (en-IN)");
-        // Add a small delay to prevent rapid start/stop loops which cause 'aborted'
-        const timeoutId = setTimeout(() => {
-          SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
-        }, 300);
-        return () => clearTimeout(timeoutId);
+        SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
       }
     } else if (listening) {
       SpeechRecognition.stopListening();
@@ -266,7 +268,8 @@ export const SympraVoiceProvider = ({ children }) => {
     listening,
     transcript,
     isAssistantActive,
-    setIsAssistantActive
+    setIsAssistantActive,
+    activateAssistant
   };
 
   return (
