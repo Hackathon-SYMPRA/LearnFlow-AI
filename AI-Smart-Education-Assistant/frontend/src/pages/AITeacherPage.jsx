@@ -190,7 +190,7 @@ export const AITeacherPage = () => {
       const recognition = new SR();
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = "en-US";
+      recognition.lang = "en-IN";
 
       recognition.onstart = () => {
         setIsRecording(true);

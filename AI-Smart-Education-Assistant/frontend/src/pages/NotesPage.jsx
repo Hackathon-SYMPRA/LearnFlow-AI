@@ -46,7 +46,6 @@ export const NotesPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedNote, setGeneratedNote] = useState("");
   const [isDocumentsLoaded, setIsDocumentsLoaded] = useState(false);
-  const { theme } = useTheme();
   const { currentTask, completeTask, speak } = useSympraVoice();
   const taskHandledRef = React.useRef(null);
   const { copy, copied } = useCopyToClipboard();

@@ -247,13 +247,13 @@ export const SympraVoiceProvider = ({ children }) => {
     if (isAssistantActive) {
       // Start immediately if not listening
       if (!listening && agentState !== 'processing' && agentState !== 'speaking') {
-        SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
+        SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
       }
 
       keepAliveInterval = setInterval(() => {
         if (!listening && agentState !== 'processing' && agentState !== 'speaking') {
-          console.log("[SympraVoice] Restarting microphone to keep alive in en-US");
-          SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
+          console.log("[SympraVoice] Restarting microphone to keep alive in en-IN");
+          SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
         }
       }, 2000);
     }
