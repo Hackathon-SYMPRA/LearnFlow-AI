@@ -8,7 +8,31 @@ class MockPosthog:
 
 sys.modules['posthog'] = MockPosthog()
 
+# Monkey patch sqlite3 to use newer pysqlite3 on Linux (Render)
+try:
+    __import__('pysqlite3')
+    import sys
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
+
 import chromadb
+
+# Monkey patch for ChromaDB pysqlite3 TypeError: object of type 'int' has no len()
+try:
+    import chromadb.segment.impl.metadata.sqlite as sqlite_metadata
+    original_decode_seq_id = getattr(sqlite_metadata, '_decode_seq_id', None)
+
+    if original_decode_seq_id:
+        def safe_decode_seq_id(seq_id_bytes):
+            if isinstance(seq_id_bytes, int):
+                return seq_id_bytes
+            return original_decode_seq_id(seq_id_bytes)
+            
+        sqlite_metadata._decode_seq_id = safe_decode_seq_id
+except (ImportError, AttributeError):
+    pass
+
 from chromadb.config import Settings
 from app.core.config import settings
 
