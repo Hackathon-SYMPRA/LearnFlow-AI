@@ -26,7 +26,6 @@ export const AITeacherPage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState("");
   
-  const [isDocumentsLoaded, setIsDocumentsLoaded] = useState(false);
   const { currentTask, completeTask, speak, setIsAssistantActive } = useSympraVoice();
   const taskHandledRef = React.useRef(null);
   
