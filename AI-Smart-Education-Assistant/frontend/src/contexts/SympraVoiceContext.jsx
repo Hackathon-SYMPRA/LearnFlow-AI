@@ -24,6 +24,7 @@ export const SympraVoiceProvider = ({ children }) => {
   const wakeWordDetectedRef = useRef(false);
   const recognitionRef = useRef(null);
   const isAssistantActiveRef = useRef(isAssistantActive);
+  const isSpeakingRef = useRef(false);
 
   useEffect(() => {
     isAssistantActiveRef.current = isAssistantActive;
@@ -78,9 +79,8 @@ export const SympraVoiceProvider = ({ children }) => {
 
     recognition.onend = () => {
       setListening(false);
-      // Robust auto-restart logic if it stopped but should be active
-      if (isAssistantActiveRef.current) {
-        console.log("[SympraVoice] Auto-restarting native microphone...");
+      // Robust auto-restart logic if it stopped but should be active (and not muted by TTS)
+      if (isAssistantActiveRef.current && !isSpeakingRef.current) {
         try {
           recognition.start();
         } catch (e) {
@@ -107,6 +107,12 @@ export const SympraVoiceProvider = ({ children }) => {
   // Function to make the AI speak
   const speak = useCallback((text, lang = 'en-US') => {
     return new Promise((resolve) => {
+      // Physically stop the microphone to prevent echo and flush the buffer!
+      isSpeakingRef.current = true;
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch(e) {}
+      }
+
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const cleanText = cleanMarkdownForSpeech(text);
@@ -126,10 +132,28 @@ export const SympraVoiceProvider = ({ children }) => {
           }
         }
 
-        utterance.onend = () => resolve();
-        utterance.onerror = () => resolve();
+        utterance.onend = () => {
+          isSpeakingRef.current = false;
+          if (isAssistantActiveRef.current && recognitionRef.current) {
+            try { recognitionRef.current.start(); } catch(e) {}
+          }
+          resolve();
+        };
+        
+        utterance.onerror = () => {
+          isSpeakingRef.current = false;
+          if (isAssistantActiveRef.current && recognitionRef.current) {
+            try { recognitionRef.current.start(); } catch(e) {}
+          }
+          resolve();
+        };
+        
         window.speechSynthesis.speak(utterance);
       } else {
+        isSpeakingRef.current = false;
+        if (isAssistantActiveRef.current && recognitionRef.current) {
+          try { recognitionRef.current.start(); } catch(e) {}
+        }
         resolve(); // Fallback if no TTS
       }
     });
@@ -215,15 +239,18 @@ export const SympraVoiceProvider = ({ children }) => {
 
     const deactivateWords = ['deactivate', 'stop listening', 'stop sympra', 'sympra stop', 'simpra stop', 'ok stop', 'band kara', 'band ho', 'close sympra'];
     if (deactivateWords.some(w => lowerTranscript.includes(w))) {
+      if (silenceTimer.current) clearTimeout(silenceTimer.current);
       setIsAssistantActive(false);
       setAgentState('idle');
-      if (recognitionRef.current) recognitionRef.current.stop();
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch(e) {}
+      }
       resetTranscript();
       speak("Assistant deactivated.", "en-US");
       return;
     }
 
-    if (agentState === 'idle' || agentState === 'speaking') {
+    if (agentState === 'idle') {
       const matchedWord = wakeWords.find(w => lowerTranscript.includes(w));
       if (matchedWord) {
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -235,11 +262,15 @@ export const SympraVoiceProvider = ({ children }) => {
         resetTranscript();
 
         if (afterText.length > 2) {
+          if (silenceTimer.current) clearTimeout(silenceTimer.current);
           processCommand(afterText);
         } else {
-          setAgentState('listening');
+          setAgentState('speaking');
           speak("Hello, this is Sympra created by Team Sympra to help you in LearnFlow. How can I help you?")
-            .then(() => resetTranscript());
+            .then(() => {
+              resetTranscript();
+              setAgentState('listening');
+            });
         }
         return;
       }
