@@ -242,29 +242,18 @@ export const SympraVoiceProvider = ({ children }) => {
       return;
     }
 
-    // Robust interval to ensure mic stays active if it unexpectedly drops
-    let keepAliveInterval;
     if (isAssistantActive) {
-      // Start immediately if not listening
       if (!listening && agentState !== 'processing' && agentState !== 'speaking') {
-        SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
-      }
-
-      keepAliveInterval = setInterval(() => {
-        if (!listening && agentState !== 'processing' && agentState !== 'speaking') {
-          console.log("[SympraVoice] Restarting microphone to keep alive in en-IN");
+        console.log("[SympraVoice] Starting microphone (en-IN)");
+        // Add a small delay to prevent rapid start/stop loops which cause 'aborted'
+        const timeoutId = setTimeout(() => {
           SpeechRecognition.startListening({ continuous: true, language: 'en-IN' });
-        }
-      }, 2000);
-    }
-
-    if (!isAssistantActive && listening) {
+        }, 300);
+        return () => clearTimeout(timeoutId);
+      }
+    } else if (listening) {
       SpeechRecognition.stopListening();
     }
-
-    return () => {
-      if (keepAliveInterval) clearInterval(keepAliveInterval);
-    };
   }, [browserSupportsSpeechRecognition, listening, agentState, isAssistantActive]);
 
   const value = {
