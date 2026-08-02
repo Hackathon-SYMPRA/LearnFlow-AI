@@ -160,7 +160,8 @@ const FloatingAICompanion = () => {
       else if (hours < 18) timeGreeting = "Good afternoon";
       else timeGreeting = "Good evening";
   
-      const userName = user?.name ? user.name.split(" ")[0] : "Scholar";
+      const rawName = user?.name || user?.full_name;
+      const userName = typeof rawName === "string" && rawName.trim() ? rawName.trim().split(/\s+/)[0] : "Scholar";
       speak(`${timeGreeting}, ${userName}! I am LearnFlow, your AI study companion. Ready to level up your knowledge today?`);
     }
   };

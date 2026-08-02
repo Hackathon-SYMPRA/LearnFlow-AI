@@ -257,12 +257,12 @@ export const Header = ({ onToggleSidebar }) => {
               {user?.avatar ? (
                 <img
                   src={user.avatar}
-                  alt={user.name}
+                  alt={user.name || user.full_name || "User"}
                   className="h-8 w-8 rounded-full object-cover"
                 />
               ) : (
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 text-xs font-semibold text-white">
-                  {user ? getInitials(user.name) : "U"}
+                  {user ? getInitials(user.name || user.full_name) : "U"}
                 </div>
               )}
               <ChevronDown
@@ -285,7 +285,7 @@ export const Header = ({ onToggleSidebar }) => {
                   {user && (
                     <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-800 mb-1">
                       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {user.name}
+                        {user.name || user.full_name || "User"}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                         {user.email}

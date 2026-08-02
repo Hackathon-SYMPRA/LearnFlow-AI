@@ -160,13 +160,13 @@ export const Sidebar = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-3 mb-3">
               <div className="relative">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-electric-500 to-cyber-500 text-sm font-bold text-white shadow-md">
-                  {user.name.charAt(0).toUpperCase()}
+                  {(user.name || user.full_name || "U").charAt(0).toUpperCase()}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-success-500 rounded-full border-2 border-white dark:border-surface" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
-                  {user.name}
+                  {user.name || user.full_name || "User"}
                 </p>
                 <p className="truncate text-[10px] text-electric-500 font-semibold uppercase tracking-wider">
                   Level 12 Scholar

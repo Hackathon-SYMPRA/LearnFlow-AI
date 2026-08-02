@@ -12,10 +12,18 @@ import { authService } from "@/services";
 const AuthContext = createContext(undefined);
 
 const normalizeUser = (u) => {
-  if (u && u.full_name && !u.name) {
-    u.name = u.full_name;
+  if (!u) return null;
+  const rawUser = u.data ? (u.data.user || u.data) : u;
+  if (!rawUser || typeof rawUser !== "object") return null;
+
+  const userObj = { ...rawUser };
+  if (userObj.full_name && !userObj.name) {
+    userObj.name = userObj.full_name;
   }
-  return u;
+  if (userObj.name && !userObj.full_name) {
+    userObj.full_name = userObj.name;
+  }
+  return userObj;
 };
 
 export const AuthProvider = ({ children }) => {
@@ -48,8 +56,8 @@ export const AuthProvider = ({ children }) => {
     setState((prev) => ({ ...prev, isLoading: true }));
     try {
       const response = await authService.login(email, password);
-      const user = normalizeUser(response.data.user);
-      const token = response.data.tokens.access_token;
+      const user = normalizeUser(response);
+      const token = response.data?.tokens?.access_token || response.tokens?.access_token;
       storage.set(STORAGE_KEYS.TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);
       setState({ user, token, isAuthenticated: true, isLoading: false });
@@ -63,8 +71,8 @@ export const AuthProvider = ({ children }) => {
     setState((prev) => ({ ...prev, isLoading: true }));
     try {
       const response = await authService.register(name, email, password);
-      const user = normalizeUser(response.data.user);
-      const token = response.data.tokens.access_token;
+      const user = normalizeUser(response);
+      const token = response.data?.tokens?.access_token || response.tokens?.access_token;
       storage.set(STORAGE_KEYS.TOKEN, token);
       storage.set(STORAGE_KEYS.USER, user);
       setState({ user, token, isAuthenticated: true, isLoading: false });
@@ -93,10 +101,13 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = useCallback(async () => {
     try {
-      let user = await authService.getCurrentUser();
-      user = normalizeUser(user);
-      storage.set(STORAGE_KEYS.USER, user);
-      setState((prev) => ({ ...prev, user }));
+      const response = await authService.getCurrentUser();
+      const user = normalizeUser(response);
+      if (user) {
+        storage.set(STORAGE_KEYS.USER, user);
+        setState((prev) => ({ ...prev, user }));
+      }
+      return user;
     } catch (error) {
       throw error;
     }

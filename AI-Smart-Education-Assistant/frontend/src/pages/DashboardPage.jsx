@@ -157,7 +157,7 @@ export const DashboardPage = () => {
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div className="max-w-2xl text-white">
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
-                {getGreeting()}, {user?.name?.split(" ")[0] ?? "Learner"}! 🚀
+                {getGreeting()}, {(typeof (user?.name || user?.full_name) === "string" && (user?.name || user?.full_name).trim().split(/\s+/)[0]) || "Learner"}! 🚀
               </h1>
               <p className="text-electric-100 font-medium text-lg mb-6">
                 "The beautiful thing about learning is nobody can take it away from you."

@@ -68,10 +68,13 @@ export const cn = (...classes) => {
 };
 
 export const getInitials = (name) => {
-  return name
-    .split(" ")
+  if (!name || typeof name !== "string") return "U";
+  const trimmed = name.trim();
+  if (!trimmed) return "U";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "U";
+  return parts
     .map((n) => n[0])
-    .filter(Boolean)
     .slice(0, 2)
     .join("")
     .toUpperCase();

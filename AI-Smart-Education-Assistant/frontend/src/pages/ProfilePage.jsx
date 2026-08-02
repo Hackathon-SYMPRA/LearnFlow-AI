@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { userService } from "@/services";
 import {
   Card,
   CardHeader,
@@ -32,17 +33,31 @@ export const ProfilePage = () => {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: user?.name ?? "",
+      name: user?.name ?? user?.full_name ?? "",
       email: user?.email ?? "",
     },
   });
 
-  const onSubmit = async (_data) => {
+  useEffect(() => {
+    if (user) {
+      reset({
+        name: user.name ?? user.full_name ?? "",
+        email: user.email ?? "",
+      });
+    }
+  }, [user, reset]);
+
+  const onSubmit = async (data) => {
     try {
+      await userService.updateProfile({
+        full_name: data.name,
+        email: data.email,
+      });
       await refreshUser();
       toast.success("Profile updated successfully");
     } catch (error) {
@@ -74,12 +89,12 @@ export const ProfilePage = () => {
               {user?.avatar ? (
                 <img
                   src={user.avatar}
-                  alt={user.name}
+                  alt={user?.name ?? user?.full_name ?? "User"}
                   className="h-24 w-24 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg"
                 />
               ) : (
                 <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-white/20 text-3xl font-bold backdrop-blur-sm ring-4 ring-white/20 shadow-lg">
-                  {user ? getInitials(user.name) : "U"}
+                  {user ? getInitials(user.name || user.full_name) : "U"}
                 </div>
               )}
               <button
@@ -92,7 +107,7 @@ export const ProfilePage = () => {
             </div>
             <div className="min-w-0 flex-1">
               <h2 className="text-2xl font-bold">
-                {user?.name ?? "User Name"}
+                {user?.name ?? user?.full_name ?? "User Name"}
               </h2>
               <p className="mt-1 text-sm text-white/80">
                 {user?.email ?? "user@example.com"}
