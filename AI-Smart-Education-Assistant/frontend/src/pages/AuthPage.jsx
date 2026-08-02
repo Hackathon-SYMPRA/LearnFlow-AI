@@ -514,6 +514,14 @@ export const AuthPage = () => {
                     {...registerForm.register("password")}
                     className={theme === 'dark' ? "bg-slate-950/50 border-slate-700 text-white placeholder:text-slate-500" : "bg-white"}
                   />
+                  <Input
+                    label="Confirm Password" type={showRegPw ? "text" : "password"} placeholder="••••••••"
+                    leftIcon={<Lock className="h-4 w-4 text-slate-400" />}
+                    error={registerForm.formState.errors.confirmPassword?.message}
+                    onFocus={() => handleFocus("confirmPassword")} onBlur={handleBlur}
+                    {...registerForm.register("confirmPassword")}
+                    className={theme === 'dark' ? "bg-slate-950/50 border-slate-700 text-white placeholder:text-slate-500" : "bg-white"}
+                  />
                   
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
