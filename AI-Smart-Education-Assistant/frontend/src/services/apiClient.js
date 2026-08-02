@@ -33,7 +33,8 @@ class ApiClient {
         if (error.response?.status === 401) {
           storage.remove(STORAGE_KEYS.TOKEN);
           storage.remove(STORAGE_KEYS.USER);
-          if (!window.location.pathname.includes("/login")) {
+          const path = window.location.pathname;
+          if (!path.includes("/login") && !path.includes("/register")) {
             window.location.href = "/login";
           }
         }

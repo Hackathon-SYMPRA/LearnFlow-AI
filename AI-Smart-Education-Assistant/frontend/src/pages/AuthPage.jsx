@@ -221,6 +221,21 @@ export const AuthPage = () => {
     });
   };
 
+  const extractErrorMessage = (error, fallback) => {
+    if (!error) return fallback;
+    const detail = error.response?.data?.detail || error.details || error.message;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      return detail
+        .map((e) => e.msg || e.message || (typeof e === "string" ? e : JSON.stringify(e)))
+        .join("; ");
+    }
+    if (detail && typeof detail === "object") {
+      return detail.msg || detail.message || JSON.stringify(detail);
+    }
+    return fallback;
+  };
+
   const onLogin = async (data) => {
     setIsSubmittingForm(true);
     setNetworkError(null);
@@ -229,9 +244,10 @@ export const AuthPage = () => {
     try {
       await login(data.email, data.password);
       triggerSuccess("Welcome back to LearnFlow!");
-      setTimeout(() => navigate(ROUTES.dashboard, { replace: true }), 2000);
+      setTimeout(() => navigate(ROUTES.dashboard, { replace: true }), 1000);
     } catch (error) {
-      triggerError(error.response?.data?.detail || error.message || "Invalid credentials. Please try again.");
+      const msg = extractErrorMessage(error, "Invalid credentials. Please try again.");
+      triggerError(msg);
     } finally {
       setIsSubmittingForm(false);
     }
@@ -245,9 +261,10 @@ export const AuthPage = () => {
     try {
       await register(data.name, data.email, data.password);
       triggerSuccess("Account created successfully!");
-      setTimeout(() => navigate(ROUTES.dashboard, { replace: true }), 2000);
+      setTimeout(() => navigate(ROUTES.dashboard, { replace: true }), 1000);
     } catch (error) {
-      triggerError(error.response?.data?.detail || error.message || "Registration failed. Please try again.");
+      const msg = extractErrorMessage(error, "Registration failed. Please try again.");
+      triggerError(msg);
     } finally {
       setIsSubmittingForm(false);
     }
@@ -374,7 +391,7 @@ export const AuthPage = () => {
               {networkError && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6 rounded-xl border border-danger-500/30 bg-danger-500/10 p-4 flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-danger-500 shrink-0 mt-0.5" />
-                  <p className="text-sm text-danger-200">{networkError}</p>
+                  <p className="text-sm text-danger-200">{String(networkError)}</p>
                 </motion.div>
               )}
               {successMessage && (
