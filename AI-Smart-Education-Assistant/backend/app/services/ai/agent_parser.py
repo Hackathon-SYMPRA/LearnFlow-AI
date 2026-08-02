@@ -28,6 +28,9 @@ class SympraAgentParser:
 
         Language Instructions:
         - YOU MUST ALWAYS set "detected_language" to "en" and your "speech_reply" MUST be in pure English language, regardless of what language the user speaks.
+        - The user will often speak in Marathi or Hindi mixed with English (e.g. "mala quiz generate kar", "flashcards banav", "mind map dakhava").
+        - Map these precisely! If they say "quiz" -> GENERATE_QUIZ. If they say "flashcards" -> GENERATE_FLASHCARDS. If they say "notes" -> GENERATE_NOTES.
+        - Pay close attention to their NEWEST command. Do not stick to old tasks if they ask for a new feature.
 
         You MUST output your response STRICTLY as a JSON object matching this schema:
         {

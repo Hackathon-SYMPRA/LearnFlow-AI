@@ -53,7 +53,6 @@ import {
   generateId,
   formatFileSize,
 } from "@/utils/format";
-import { CitationPanel } from "@/components/chat/CitationPanel";
 import { ChatInput } from "@/components/chat/ChatInput";
 import {
   ThinkingDots,
@@ -1366,7 +1365,7 @@ export const ChatPage = () => {
                       animate: { opacity: 1, x: 0 },
                     };
                 return (
-                  <React.Fragment key={m.id}>
+                  <React.Fragment key={m.id || `msg-${idx}`}>
                     {isSystem && (
                       <motion.div
                         {...variants}
@@ -1417,7 +1416,7 @@ export const ChatPage = () => {
                             </p>
                           </div>
                           <span className="mt-1 px-1 text-[10px] text-slate-400 dark:text-slate-500">
-                            {formatDateTime(m.timestamp)}
+                            {formatDateTime(m.timestamp || new Date().toISOString())}
                           </span>
                         </div>
                         <div className="h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-secondary-500 to-secondary-600 text-white flex items-center justify-center text-xs font-semibold shadow-sm">
@@ -1486,92 +1485,6 @@ export const ChatPage = () => {
                                   )}
                                 {!isStreamingMsg && m.content && (
                                   <>
-                                    {m.citations && m.citations.length > 0 && (
-                                      <div className="mt-4">
-                                        <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                          <FileText className="h-3.5 w-3.5 text-primary-500" />
-                                          Cited Sources
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                          {m.citations.map((c, ci) => {
-                                            const tone =
-                                              confidenceFromCitations([c]);
-                                            return (
-                                              <button
-                                                key={ci}
-                                                type="button"
-                                                onClick={() =>
-                                                  setSnippetModal({
-                                                    msgId: m.id,
-                                                    citationIdx: ci,
-                                                  })
-                                                }
-                                                className="flex items-start gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 p-2.5 text-left transition"
-                                              >
-                                                <div className="mt-0.5 h-8 w-8 shrink-0 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-primary-500 flex items-center justify-center">
-                                                  <FileText className="h-4 w-4" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                  <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
-                                                    {c.documentName}
-                                                  </p>
-                                                  <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-                                                    {c.page
-                                                      ? `Page ${c.page}`
-                                                      : "Source"}
-                                                    {" \u2022 "}
-                                                    {tone.level}{" "}
-                                                    {Math.round(
-                                                      tone.value * 100,
-                                                    )}
-                                                    %
-                                                  </p>
-                                                  <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-primary-600 dark:text-primary-400 hover:underline">
-                                                    <Eye className="h-3 w-3" />
-                                                    View snippet
-                                                  </span>
-                                                </div>
-                                              </button>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    )}
-                                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                                      {(() => {
-                                        const conf = confidenceFromCitations(
-                                          m.citations,
-                                        );
-                                        return (
-                                          <span
-                                            className={cn(
-                                              "chip",
-                                              conf.level === "High" &&
-                                                "bg-accent-100 text-accent-700 dark:bg-accent-950/60 dark:text-accent-400",
-                                              conf.level === "Medium" &&
-                                                "bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-400",
-                                              conf.level === "Low" &&
-                                                "bg-warning-100 text-warning-700 dark:bg-warning-950/60 dark:text-warning-400",
-                                            )}
-                                          >
-                                            <ShieldCheck className="h-3.5 w-3.5" />
-                                            {conf.level} Confidence
-                                            {" \u2022 "}
-                                            {Math.round(conf.value * 100)}%
-                                          </span>
-                                        );
-                                      })()}
-                                    </div>
-                                    <div className="mt-3 flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-50 via-secondary-50 to-accent-50 dark:from-primary-950/40 dark:via-secondary-950/40 dark:to-accent-950/30 border border-primary-100 dark:border-primary-900/40 px-3 py-2">
-                                      <Sparkles className="h-4 w-4 shrink-0 text-primary-500" />
-                                      <p className="text-xs text-slate-700 dark:text-slate-200">
-                                        Answer generated from your{" "}
-                                        <span className="font-semibold">
-                                          uploaded notes
-                                        </span>{" "}
-                                        and study materials
-                                      </p>
-                                    </div>
                                     {m.relatedQuestions &&
                                       m.relatedQuestions.length > 0 && (
                                         <div className="mt-3">
@@ -1599,7 +1512,7 @@ export const ChatPage = () => {
 
                               <div className="mt-1.5 flex items-center gap-3 flex-wrap">
                                 <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                  {formatDateTime(m.timestamp)}
+                                  {formatDateTime(m.timestamp || new Date().toISOString())}
                                 </span>
                                 {!isStreamingMsg && (
                                   <div className="flex items-center gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity">
@@ -1731,42 +1644,8 @@ export const ChatPage = () => {
         </div>
       </main>
 
-      {!isMobile ? (
-        rightPanelOpen && (
-          <CitationPanel
-            citations={currentCitations}
-            onClose={() => setRightPanelOpen(false)}
-            open
-          />
-        )
-      ) : (
-        <AnimatePresence>
-          {rightPanelOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden"
-                onClick={() => setRightPanelOpen(false)}
-              />
-
-              <motion.div
-                initial={{ x: 360 }}
-                animate={{ x: 0 }}
-                exit={{ x: 360 }}
-                transition={{ type: "spring", stiffness: 280, damping: 30 }}
-                className="fixed inset-y-0 right-0 z-50 w-[88%] max-w-sm lg:hidden shadow-2xl"
-              >
-                <CitationPanel
-                  citations={currentCitations}
-                  onClose={() => setRightPanelOpen(false)}
-                  open
-                />
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+      {!isMobile && (
+        <></>
       )}
 
       <AnimatePresence>

@@ -29,3 +29,8 @@ out/
 
 # MacOS
 .DS_Store
+
+# App runtime data
+backend/uploads/
+backend/chroma_data/
+

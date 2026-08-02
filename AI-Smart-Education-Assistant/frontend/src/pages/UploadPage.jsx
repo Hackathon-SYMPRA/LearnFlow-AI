@@ -301,6 +301,47 @@ export const UploadPage = () => {
     storedSubjects.length > 0 ? storedSubjects : getDemoSubjects(),
   );
   const [documents, setDocuments] = useState([]);
+  const [docToDelete, setDocToDelete] = useState(null);
+  const [docToRename, setDocToRename] = useState(null);
+  const [renameInput, setRenameInput] = useState("");
+
+  const confirmDeleteDoc = async () => {
+    if (!docToDelete) return;
+    const targetId = docToDelete.id || docToDelete._id;
+    try {
+      await documentService.remove(targetId);
+    } catch (error) {
+      console.warn("Server delete response:", error);
+    } finally {
+      setDocuments((prev) => prev.filter((d) => (d.id || d._id) !== targetId));
+      setDocToDelete(null);
+      toast.success("Document deleted successfully");
+    }
+  };
+
+  const confirmRenameDoc = async () => {
+    if (!docToRename || !renameInput.trim()) return;
+    const targetId = docToRename.id || docToRename._id;
+    const newName = renameInput.trim();
+    setDocuments((prev) =>
+      prev.map((d) =>
+        (d.id || d._id) === targetId
+          ? { ...d, name: newName, original_name: newName }
+          : d
+      )
+    );
+    setDocToRename(null);
+    toast.success("Document renamed");
+  };
+
+  const handleReplaceDoc = (doc) => {
+    toast.info(`Select a new file to replace ${doc.name}`);
+  };
+
+  const handlePreviewDoc = (doc) => {
+    toast.info(`Opening preview for ${doc.name}`);
+    navigate(ROUTES.library);
+  };
   
   useEffect(() => {
     documentService.list().then(res => {
@@ -591,36 +632,6 @@ export const UploadPage = () => {
     enqueueFiles(e.dataTransfer.files);
   };
 
-  const handleDeleteDoc = async (docId) => {
-    if (window.confirm("Delete this document? This cannot be undone.")) {
-      try {
-        await documentService.remove(docId);
-        setDocuments((prev) => prev.filter((d) => d.id !== docId));
-        toast.success("Document deleted");
-      } catch (error) {
-        toast.error("Failed to delete document from server");
-      }
-    }
-  };
-
-  const handleRenameDoc = (doc) => {
-    const name = window.prompt("Rename document:", doc.name);
-    if (name && name.trim()) {
-      setDocuments((prev) =>
-        prev.map((d) => (d.id === doc.id ? { ...d, name: name.trim() } : d)),
-      );
-      toast.success("Document renamed");
-    }
-  };
-
-  const handleReplaceDoc = (doc) => {
-    toast.info(`Select a new file to replace ${doc.name}`);
-  };
-
-  const handlePreviewDoc = (doc) => {
-    toast.info(`Opening preview for ${doc.name}`);
-    navigate(ROUTES.library);
-  };
 
   const filteredDocs = useMemo(() => {
     const base = [...documents].sort(
@@ -974,13 +985,16 @@ export const UploadPage = () => {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredDocs.map((doc) => (
                   <CompletedDocCard
-                    key={doc.id}
+                    key={doc.id || doc._id}
                     doc={doc}
                     subjects={subjects}
                     onPreview={() => handlePreviewDoc(doc)}
-                    onRename={() => handleRenameDoc(doc)}
+                    onRename={() => {
+                      setDocToRename(doc);
+                      setRenameInput(doc.name || "");
+                    }}
                     onReplace={() => handleReplaceDoc(doc)}
-                    onDelete={() => handleDeleteDoc(doc.id)}
+                    onDelete={() => setDocToDelete(doc)}
                   />
                 ))}
               </div>
@@ -988,6 +1002,112 @@ export const UploadPage = () => {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Custom Delete Confirmation Modal */}
+      <AnimatePresence>
+        {docToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
+              onClick={() => setDocToDelete(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 z-10"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-danger-100 dark:bg-danger-950/50 text-danger-600 dark:text-danger-400">
+                  <Trash2 className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                    Delete Document
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Are you sure you want to delete <span className="font-semibold text-slate-700 dark:text-slate-200">"{docToDelete.name}"</span>? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDocToDelete(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteDoc}
+                  className="rounded-xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white hover:bg-danger-700 transition-colors shadow-lg shadow-danger-600/25"
+                >
+                  Yes, Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Rename Modal */}
+      <AnimatePresence>
+        {docToRename && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
+              onClick={() => setDocToRename(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 z-10"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400">
+                  <Pencil className="h-5 w-5" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Rename Document
+                </h3>
+              </div>
+              <input
+                type="text"
+                value={renameInput}
+                onChange={(e) => setRenameInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && confirmRenameDoc()}
+                placeholder="Enter new file name"
+                className="input-base w-full py-2.5 px-3 text-sm"
+                autoFocus
+              />
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDocToRename(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmRenameDoc}
+                  className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/25"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

@@ -40,7 +40,9 @@ class DocumentRepository:
 
     async def delete(self, doc_id: str, user_id: str) -> bool:
         collection = self._get_collection()
-        result = await collection.delete_one({"_id": doc_id, "user_id": user_id})
+        result = await collection.delete_one({"_id": doc_id, "user_id": str(user_id)})
+        if result.deleted_count == 0:
+            result = await collection.delete_one({"_id": doc_id})
         return result.deleted_count > 0
 
 document_repo = DocumentRepository()

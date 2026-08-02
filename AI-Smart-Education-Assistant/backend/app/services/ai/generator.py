@@ -226,6 +226,13 @@ class AIGenerator:
         
         prompt = f"""
         Generate {note_type} from the provided study material.
+
+        CRITICAL INSTRUCTIONS based on Note Type:
+        - If "Short Notes": Provide very brief, concise bullet points only. No long paragraphs.
+        - If "Detailed Notes": Provide comprehensive notes with in-depth explanations and examples.
+        - If "Chapter Summary": Provide a high-level overview of the main ideas.
+        - If "Formula & Key Points": Extract ONLY mathematical/scientific formulas, important equations, and key definitions. Do NOT include general summaries.
+
         Structure the notes logically with headings, bullet points, and highlight key definitions or formulas where applicable.
 
         Context:
@@ -241,6 +248,13 @@ class AIGenerator:
     async def generate_notes_for_topic(self, topic: str, note_type: str = "Summary Notes") -> str:
         prompt = f"""
         Generate {note_type} on the topic of "{topic}".
+
+        CRITICAL INSTRUCTIONS based on Note Type:
+        - If "Short Notes": Provide very brief, concise bullet points only. No long paragraphs.
+        - If "Detailed Notes": Provide comprehensive notes with in-depth explanations and examples.
+        - If "Chapter Summary": Provide a high-level overview of the main ideas.
+        - If "Formula & Key Points": Extract ONLY mathematical/scientific formulas, important equations, and key definitions. Do NOT include general summaries.
+
         Structure the notes logically with headings, bullet points, and highlight key definitions or formulas where applicable.
         Make sure the content is accurate, educational, and easy to understand.
         """

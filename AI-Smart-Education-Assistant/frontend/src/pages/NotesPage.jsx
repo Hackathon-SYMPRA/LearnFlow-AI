@@ -255,7 +255,7 @@ export const NotesPage = () => {
             </div>
           </div>
 
-          <div className="mt-auto pt-4">
+          <div className="pt-4">
             <button
               onClick={() => handleGenerate()}
               disabled={isGenerating}
